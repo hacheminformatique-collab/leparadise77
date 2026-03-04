@@ -9,7 +9,7 @@ export function getSallePrice(date, isSeche) {
   const month = d.getMonth() + 1; // 1-12
   const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
 
-  const basseSaison = month >= 12 || month <= 3;
+  const basseSaison = month === 12 || month <= 3;
 
   // Prices: [avecPrestation, seche]
   let price;

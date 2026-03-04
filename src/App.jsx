@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import HomePage from './components/HomePage'
 import AdminLogin from './components/AdminLogin'
 import Dashboard from './components/Dashboard/Dashboard'
@@ -8,13 +8,20 @@ import { initDefaults } from './utils/storage'
 
 initDefaults()
 
+function ProtectedDashboard() {
+  if (!sessionStorage.getItem('adminAuth')) {
+    return <Navigate to="/admin" replace />
+  }
+  return <Dashboard />
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<ProtectedDashboard />} />
         <Route path="/devis" element={<WizardForm />} />
         <Route path="/espace-client/:devisId" element={<EspaceClient />} />
       </Routes>

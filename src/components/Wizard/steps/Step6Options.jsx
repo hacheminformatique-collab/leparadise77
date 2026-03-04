@@ -39,7 +39,11 @@ export default function Step6Options({ data, onChange, onNext, onBack }) {
                 transition: 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: '28px', marginBottom: '10px' }}>🎵</div>
+              {p.photo ? (
+                <img src={p.photo} alt={p.nomPresta} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />
+              ) : (
+                <div style={{ fontSize: '28px', marginBottom: '10px' }}>🎵</div>
+              )}
               <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '6px' }}>{p.nomPresta}</div>
               {p.description && <div style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>{p.description}</div>}
               <div style={{ fontWeight: '800', color: '#c9a84c', fontSize: '20px' }}>{p.tarif.toLocaleString('fr-FR')} €</div>

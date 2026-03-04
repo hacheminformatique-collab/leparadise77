@@ -7,9 +7,11 @@ import MenuTab from './tabs/MenuTab'
 import GateauTab from './tabs/GateauTab'
 import PrestationTab from './tabs/PrestationTab'
 import ClientsTab from './tabs/ClientsTab'
+import CalendarTab from './tabs/CalendarTab'
 
 const TABS = [
   { id: 'clients', label: '👥 Clients & Devis' },
+  { id: 'calendar', label: '📅 Calendrier' },
   { id: 'formules', label: '🏛️ Formules' },
   { id: 'menus', label: '🍽️ Menus' },
   { id: 'gateaux', label: '🎂 Gâteaux' },
@@ -25,6 +27,7 @@ export default function Dashboard() {
   function renderTab() {
     switch (activeTab) {
       case 'clients': return <ClientsTab />
+      case 'calendar': return <CalendarTab />
       case 'formules': return <FormuleSalleTab />
       case 'menus': return <MenuTab />
       case 'gateaux': return <GateauTab />
@@ -47,7 +50,7 @@ export default function Dashboard() {
           </div>
         </div>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => { sessionStorage.removeItem('adminAuth'); navigate('/') }}
           className="btn"
           style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '13px' }}
         >

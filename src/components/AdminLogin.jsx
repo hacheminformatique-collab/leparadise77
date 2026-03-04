@@ -24,6 +24,7 @@ export default function AdminLogin() {
     const settings = getSettings()
     if (pin === settings.pin) {
       saveLoginAttempts({ count: 0, blockedUntil: null })
+      sessionStorage.setItem('adminAuth', '1')
       navigate('/dashboard')
     } else {
       const attempts = getLoginAttempts()

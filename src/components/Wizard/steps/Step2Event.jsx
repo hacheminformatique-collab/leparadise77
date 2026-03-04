@@ -1,3 +1,5 @@
+import InlineCalendar from '../InlineCalendar'
+
 export default function Step2Event({ data, onChange, onNext, onBack }) {
   const typeOptions = [
     'Anniversaire', 'Babyshower', 'Baptême', 'Fiançaille', 'Mariage', 'Autres'
@@ -44,13 +46,10 @@ export default function Step2Event({ data, onChange, onNext, onBack }) {
 
         <div className="form-group">
           <label>Date de l&apos;événement *</label>
-          <input
-            type="date"
-            className="form-control"
+          <InlineCalendar
             value={data.dateEvenement || ''}
-            onChange={(e) => onChange('dateEvenement', e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            required
+            onChange={(dateStr) => onChange('dateEvenement', dateStr)}
+            minDate={new Date().toISOString().split('T')[0]}
           />
         </div>
 

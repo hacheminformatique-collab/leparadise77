@@ -239,7 +239,9 @@ export function generatePDF(devis, businessInfo, signatureDataUrl) {
     y += 4;
     try {
       doc.addImage(signatureDataUrl, "PNG", margin, y, 70, 30);
-    } catch {}
+    } catch (e) {
+      void e;
+    }
     y += 35;
   } else {
     doc.setFontSize(9);
@@ -296,7 +298,9 @@ export function generatePDF(devis, businessInfo, signatureDataUrl) {
   if (signatureDataUrl) {
     try {
       doc.addImage(signatureDataUrl, "PNG", margin, cgvY + 3, 70, 25);
-    } catch {}
+    } catch (e) {
+      void e;
+    }
   } else {
     doc.rect(margin, cgvY + 3, 70, 25);
   }

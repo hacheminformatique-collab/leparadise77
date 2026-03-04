@@ -1,9 +1,6 @@
 import { calculateTVA } from "../../utils/pricing";
 
-export default function CartBar({ cart, event, formule }) {
-  const adultes = parseInt(event?.adultes) || 0;
-  const enfants = parseInt(event?.enfants) || 0;
-
+export default function CartBar({ cart, formule }) {
   const tva = calculateTVA(
     cart.salle || 0,
     cart.menuTotal || 0,

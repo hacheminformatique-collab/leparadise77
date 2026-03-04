@@ -122,11 +122,6 @@ export default function DevisWizard() {
     navigate(`/client/${encodeURIComponent(signedDevis.numero)}`);
   }
 
-  // Effective step for display: remap to wizard step index 1-7
-  function getVisibleStep() {
-    return step;
-  }
-
   const showCart = step >= 3 && cart.salle > 0;
 
   return (
@@ -223,7 +218,7 @@ export default function DevisWizard() {
         )}
       </div>
 
-      {showCart && <CartBar cart={cart} event={event} formule={formule} />}
+      {showCart && <CartBar cart={cart} formule={formule} />}
     </div>
   );
 }

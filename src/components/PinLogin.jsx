@@ -15,6 +15,7 @@ export default function PinLogin({ onSuccess, onClose }) {
 
   function remaining() {
     if (!locked) return 0;
+    // eslint-disable-next-line react-hooks/purity
     return Math.ceil((locked - Date.now()) / 1000);
   }
 
@@ -46,6 +47,7 @@ export default function PinLogin({ onSuccess, onClose }) {
       const lockout = storage.getLockout();
       const attempts = (lockout.attempts || 0) + 1;
       if (attempts >= 3) {
+        // eslint-disable-next-line react-hooks/purity
         const lockedUntil = Date.now() + 10 * 60 * 1000;
         storage.setLockout({ attempts, lockedUntil });
         setLocked(lockedUntil);

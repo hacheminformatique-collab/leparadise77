@@ -8,15 +8,26 @@ function vatBreakdown(ttc, rate) {
   return { ht, tva, ttc }
 }
 
+function calcMenuItemTotal(item, nbAdultes, nbEnfants) {
+  if (!item.tarif) return 0
+  if (item.section === 'Cocktail de bienvenu') return item.tarif * (nbAdultes + nbEnfants)
+  if (item.section === 'Menu enfants') return item.tarif * nbEnfants
+  if (item.section === 'Boissons') return 0
+  return item.tarif * nbAdultes
+}
+
 export default function Step7Summary({ data, onBack, onSubmit }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [devisId, setDevisId] = useState(null)
+  const [devisNumber, setDevisNumber] = useState(null)
 
-  const nbPersonnes = data.nbPersonnes || 0
+  const nbAdultes = parseInt(data.nbAdultes) || data.nbPersonnes || 0
+  const nbEnfants = parseInt(data.nbEnfants) || 0
+  const nbPersonnes = nbAdultes + nbEnfants
   const prixSalle = data.prixSalle || 0
 
-  const menuTotal = (data.menus || []).reduce((sum, m) => sum + (m.tarif || 0), 0) * nbPersonnes
+  const menuTotal = (data.menus || []).reduce((sum, m) => sum + calcMenuItemTotal(m, nbAdultes, nbEnfants), 0)
   const gateauTotal = (data.gateau?.tarif || 0) * nbPersonnes
   const traiteurTotal = menuTotal + gateauTotal
   const prestationsTotal = (data.prestations || []).reduce((sum, p) => sum + (p.tarif || 0), 0)
@@ -47,6 +58,7 @@ export default function Step7Summary({ data, onBack, onSubmit }) {
     const clients = getClients()
     saveClients([...clients, devis])
     setDevisId(id)
+    setDevisNumber(devisNumber)
     setSubmitted(true)
     setSubmitting(false)
 
@@ -62,7 +74,7 @@ export default function Step7Summary({ data, onBack, onSubmit }) {
         <p className="text-muted mb-3">Votre devis a été généré et le PDF téléchargé automatiquement.</p>
         <div style={{ background: '#fdf3d9', borderRadius: '10px', padding: '16px', display: 'inline-block', marginBottom: '24px' }}>
           <strong>Numéro de devis : </strong>
-          <span style={{ color: '#c9a84c', fontWeight: '800' }}>{data.devisNumber}</span>
+          <span style={{ color: '#c9a84c', fontWeight: '800' }}>{devisNumber}</span>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href={`/espace-client/${devisId}`} className="btn btn-primary">

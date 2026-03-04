@@ -14,7 +14,7 @@ export default function EspaceClient() {
   const sigRef = useRef(null)
 
   const clients = getClients()
-  const devis = clients.find((c) => c.id === devisId)
+  const devis = clients.find((c) => c.id === devisId || c.devisNumber === devisId)
 
   const [signed, setSigned] = useState(!!devis?.signature)
   const [signatureData, setSignatureData] = useState(devis?.signature || null)
@@ -33,9 +33,20 @@ export default function EspaceClient() {
     )
   }
 
-  const nbPersonnes = devis.nbPersonnes || 0
+  const nbAdultes = parseInt(devis.nbAdultes) || devis.nbPersonnes || 0
+  const nbEnfants = parseInt(devis.nbEnfants) || 0
+  const nbPersonnes = nbAdultes + nbEnfants
   const prixSalle = devis.prixSalle || 0
-  const menuTotal = (devis.menus || []).reduce((s, m) => s + (m.tarif || 0), 0) * nbPersonnes
+
+  function calcMenuItemTotal(item) {
+    if (!item.tarif) return 0
+    if (item.section === 'Cocktail de bienvenu') return item.tarif * (nbAdultes + nbEnfants)
+    if (item.section === 'Menu enfants') return item.tarif * nbEnfants
+    if (item.section === 'Boissons') return 0
+    return item.tarif * nbAdultes
+  }
+
+  const menuTotal = (devis.menus || []).reduce((s, m) => s + calcMenuItemTotal(m), 0)
   const gateauTotal = (devis.gateau?.tarif || 0) * nbPersonnes
   const prestationsTotal = (devis.prestations || []).reduce((s, p) => s + (p.tarif || 0), 0)
   const totalTTC = prixSalle + menuTotal + gateauTotal + prestationsTotal
@@ -139,9 +150,9 @@ export default function EspaceClient() {
               {(devis.menus || []).filter((m) => m.tarif > 0).map((m) => (
                 <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>
-                    {m.nomMenu} × {nbPersonnes} pers.
+                    {m.nomMenu}
                   </td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(m.tarif * nbPersonnes)}</td>
+                  <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(calcMenuItemTotal(m))}</td>
                 </tr>
               ))}
               {gateauTotal > 0 && (

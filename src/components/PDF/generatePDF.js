@@ -2,42 +2,53 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getSettings } from '../../utils/storage'
 
-const CGV = `CONDITIONS GÉNÉRALES DE VENTE
+const CGV = `CONDITIONS GÉNÉRALES DE LOCATION ET DE PRESTATIONS - LE PARADISE RÉCEPTION
 
-1. OBJET
-Les présentes conditions générales de vente s'appliquent à toutes les prestations conclues par la SARL AFM (Le Paradise) avec ses clients.
+ARTICLE 1 : OBJET ET IDENTITÉ DU PRESTATAIRE
+Les presentes conditions regissent les relations contractuelles entre la societe AFM (Enseigne PARADISE), SARL au capital de 7 500,00 EUR, immatriculee au RCS de Meaux sous le SIRET 904 543 816, dont le siege social est situe au 5 avenue FRIDINGEN 77100 NANTEUIL LES MEAUX, et le Client. Elles s'appliquent de plein droit a toutes les prestations de location de salle (seche ou avec options), de restauration (Traiteur) et de services evenementiels proposees par AFM.
 
-2. RÉSERVATION ET ACOMPTE
-La réservation est confirmée à la réception d'un acompte de 30% du montant total TTC du devis, accompagné du contrat signé. Sans ces éléments, la date reste disponible pour d'autres clients.
+ARTICLE 2 : DESTINATION DES LIEUX
+Le lieu de reception est exclusivement destine a accueillir l'evenement precise sur le devis. Les locaux sont loues a titre prive et temporaire pour la duree strictement definie au contrat. Toute modification de l'objet de l'evenement sans accord ecrit de AFM peut entrainer l'annulation immediate du contrat.
 
-3. SOLDE
-Le solde du montant total est dû 30 jours avant la date de l'événement. En cas de non-paiement, la SARL AFM se réserve le droit d'annuler la réservation sans remboursement de l'acompte.
+ARTICLE 3 : ÉQUIPEMENTS
+Le Client declare parfaitement connaitre les lieux loues pour les avoir visites. Toute friture ou cuisson vive reste strictement interdite a l'interieur.
 
-4. ANNULATION PAR LE CLIENT
-- Annulation plus de 90 jours avant l'événement : remboursement de l'acompte à hauteur de 50%.
-- Annulation entre 30 et 90 jours : l'acompte reste acquis à la SARL AFM.
-- Annulation moins de 30 jours : le montant total du devis est dû.
+ARTICLE 4 : DURÉE ET HORAIRES
+La fin de l'evenement est fixee a l'heure mentionnee au devis. Tout depassement sera facture 150 EUR TTC par heure entamee.
 
-5. ANNULATION PAR LE PARADISE
-En cas d'annulation par Le Paradise pour un cas de force majeure, l'intégralité des sommes versées sera remboursée.
+ARTICLE 5 : MODALITÉS DE PAIEMENT
+Les prix sont exprimes en euros TTC. Taux de TVA : 10% pour la restauration, 20% pour la location et les services. Un acompte de 1 500 EUR minimum est exige a la signature. Le solde total doit etre regle au plus tard 45 jours avant l'evenement.
 
-6. RESPONSABILITÉS
-Le client est responsable de tous les dommages causés aux locaux, au matériel et aux équipements mis à disposition. Une caution de 1500€ sera demandée le jour de l'événement. Elle sera restituée après vérification des locaux.
+ARTICLE 6 : ANNULATION PAR LE CLIENT
+En cas d'annulation, les acomptes verses restent definitivement acquis a la societe AFM. La date etant reservee exclusivement pour le Client, le solde reste du a AFM a titre de dedommagement. Conformement a l'Art. L221-28 du Code de la Consommation, aucun droit de retractation ne s'applique.
 
-7. CAPACITÉ
-La capacité maximale de la salle est de 250 personnes. Tout dépassement est interdit.
+ARTICLE 7 : NOMBRE DE CONVIVES
+Le nombre exact de convives doit etre confirme par ecrit au plus tard 15 jours ouvrables avant l'evenement. Une baisse de plus de 10% de l'effectif ne pourra donner lieu a une reduction du prix total convenu.
 
-8. HORAIRES
-Les événements se terminent au plus tard à 5h00 du matin. Tout dépassement entraîne une facturation supplémentaire de 200€ par heure.
+ARTICLE 8 : DÉPÔT DE GARANTIE
+Un depot de garantie de 3 000 EUR par cheque est exige le jour de l'evenement. Il sera restitue dans un delai de 7 jours ouvres apres verification des equipements.
 
-9. TRAITEUR
-Sauf accord préalable, seuls les prestataires agréés par Le Paradise sont autorisés à intervenir dans les locaux.
+ARTICLE 9 : RESPONSABILITÉ ET ASSURANCES
+Le Client doit fournir une attestation d'assurance Responsabilite Civile "Organisateur d'evenement" au plus tard 30 jours avant l'evenement. AFM decline toute responsabilite en cas de vol ou de dommage subi par les biens personnels.
 
-10. LITIGE
-Tout litige relatif à l'interprétation ou l'exécution du présent contrat sera soumis aux tribunaux compétents de Meaux.
+ARTICLE 10 : SÉCURITÉ ET ORDRE PUBLIC
+L'usage de flammes reelles, chichas, encens, cierges magiques est strictement interdit. Les tirs de mortiers, feux d'artifice et petards sont strictement interdits. Le service d'alcool aux mineurs est strictement interdit.
 
-SARL AFM — 5 avenue Fridingen, 77100 Nanteuil les Meaux
-RCS de Meaux : 904543816 — contact@leparadise77.fr`
+ARTICLE 11 : CESSION
+Toute cession ou sous-location de la salle est strictement interdite.
+
+ARTICLE 12 : FORCE MAJEURE
+En cas d'evenement imprevisible, la prestation pourra etre reportee via un avoir de 12 mois. Aucun remboursement ne pourra etre exige.
+
+ARTICLE 13 : RÉSOLUTION ET LITIGES
+Le present contrat sera resilie immediatement en cas de violation d'une clause de securite majeure. A defaut d'accord amiable, tout litige sera porte devant le Tribunal de MEAUX (77).
+
+ARTICLE 14 : PROTECTION DES DONNÉES (RGPD)
+Les informations collectees sont necessaires pour la gestion de votre reservation. Vous disposez d'un droit d'acces et de rectification en contactant la SARL AFM.
+
+AFM - PARADISE - 5 AVENUE FRIDINGEN, 77100 NANTEUIL LES MEAUX
+SARL au capital de 7 500,00 EUR - SIREN 904 543 816 - TVA FR06904543816
+RCS MEAUX (inscrit le 01/11/2021) - NAF 68.20B`
 
 function formatMoney(n) {
   return Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
@@ -47,6 +58,14 @@ function vatBreakdown(ttc, rate) {
   const ht = ttc / (1 + rate)
   const tva = ttc - ht
   return { ht, tva, ttc }
+}
+
+function calcMenuItemTotal(item, nbAdultes, nbEnfants) {
+  if (!item.tarif) return 0
+  if (item.section === 'Cocktail de bienvenu') return item.tarif * (nbAdultes + nbEnfants)
+  if (item.section === 'Menu enfants') return item.tarif * nbEnfants
+  if (item.section === 'Boissons') return 0
+  return item.tarif * nbAdultes
 }
 
 export function generatePDF(devis) {
@@ -93,7 +112,6 @@ export function generatePDF(devis) {
   y += 6
   doc.text(`${devis.prenom || ''} ${devis.nom || ''}`, 20, y); y += 5
   if (devis.adresse) { doc.text(devis.adresse, 20, y); y += 5 }
-  if (devis.codePostal || devis.ville) { doc.text(`${devis.codePostal || ''} ${devis.ville || ''}`, 20, y); y += 5 }
   doc.text(`Email: ${devis.email || ''}`, 20, y); y += 5
   doc.text(`Tél: ${devis.telephone || ''}`, 20, y); y += 10
 
@@ -108,16 +126,18 @@ export function generatePDF(devis) {
   doc.text(`Type: ${devis.typeEvenement || '—'}`, 20, y)
   doc.text(`Date: ${evDate}`, 110, y)
   y += 5
-  doc.text(`Nombre de personnes: ${devis.nbPersonnes || '—'}`, 20, y)
+  const nbAdultes = parseInt(devis.nbAdultes) || devis.nbPersonnes || 0
+  const nbEnfants = parseInt(devis.nbEnfants) || 0
+  const nbPersonnes = nbAdultes + nbEnfants
+  doc.text(`Personnes: ${nbPersonnes} (${nbAdultes} adultes${nbEnfants > 0 ? ` + ${nbEnfants} enfants` : ''})`, 20, y)
   if (devis.heureDebut) doc.text(`Horaires: ${devis.heureDebut} — ${devis.heureFin || ''}`, 110, y)
   y += 5
   doc.text(`Formule: ${devis.formule?.nomFormule || '—'}`, 20, y)
   y += 12
 
   // ---- Pricing table ----
-  const nbPersonnes = devis.nbPersonnes || 0
   const prixSalle = devis.prixSalle || 0
-  const menuTotal = (devis.menus || []).reduce((s, m) => s + (m.tarif || 0), 0) * nbPersonnes
+  const menuTotal = (devis.menus || []).reduce((s, m) => s + calcMenuItemTotal(m, nbAdultes, nbEnfants), 0)
   const gateauTotal = (devis.gateau?.tarif || 0) * nbPersonnes
   const traiteurTotal = menuTotal + gateauTotal
   const prestationsTotal = (devis.prestations || []).reduce((s, p) => s + (p.tarif || 0), 0)
@@ -142,11 +162,14 @@ export function generatePDF(devis) {
 
   // Menu details
   if ((devis.menus || []).length > 0) {
-    const menuLines = (devis.menus || []).filter((m) => m.tarif > 0).map((m) => `${m.nomMenu} (${m.tarif}€/pers.)`).join('\n')
+    const menuLines = (devis.menus || []).filter((m) => m.tarif > 0).map((m) => {
+      const total = calcMenuItemTotal(m, nbAdultes, nbEnfants)
+      return `${m.nomMenu} (${m.tarif}€/pers.) = ${formatMoney(total)}`
+    }).join('\n')
     if (menuLines && menuTotal > 0) {
       const menuHT = vatBreakdown(menuTotal, 0.10)
       rows.push([
-        `Traiteur — Menus\n${menuLines}\n(${nbPersonnes} personnes)`,
+        `Traiteur — Menus\n${menuLines}`,
         '10%',
         formatMoney(menuHT.ht),
         formatMoney(menuHT.tva),
@@ -158,7 +181,7 @@ export function generatePDF(devis) {
   if (gateauTotal > 0) {
     const gateauHT = vatBreakdown(gateauTotal, 0.10)
     rows.push([
-      `Gâteau — ${devis.gateau?.nomGateau || ''}\n(${nbPersonnes} personnes × ${devis.gateau?.tarif}€)`,
+      `Gâteau — ${devis.gateau?.nomGateau || ''}\n(${nbPersonnes} pers. × ${devis.gateau?.tarif}€)`,
       '10%',
       formatMoney(gateauHT.ht),
       formatMoney(gateauHT.tva),
@@ -223,7 +246,7 @@ export function generatePDF(devis) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
   doc.setTextColor(26, 26, 46)
-  doc.text('CONDITIONS GÉNÉRALES DE VENTE', 20, y)
+  doc.text('CONDITIONS GÉNÉRALES DE LOCATION ET DE PRESTATIONS', 20, y)
   y += 8
 
   doc.setFont('helvetica', 'normal')
@@ -235,6 +258,35 @@ export function generatePDF(devis) {
     doc.text(line, 20, y)
     y += 4
   })
+
+  // ---- Signature area on last CGV page ----
+  if (y > pageH - 50) { doc.addPage(); y = 20 }
+  y += 8
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(26, 26, 46)
+  doc.text('BON POUR ACCORD', 20, y)
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(60, 60, 60)
+  doc.text('Lu et approuvé — Signature du client :', 20, y)
+  y += 6
+  if (devis.signature) {
+    try {
+      doc.addImage(devis.signature, 'PNG', 20, y, 80, 30)
+      y += 34
+    } catch (e) { y += 34 }
+  } else {
+    doc.setDrawColor(150, 150, 150)
+    doc.rect(20, y, 80, 30)
+    y += 34
+  }
+  doc.setFontSize(8)
+  doc.setTextColor(100, 100, 100)
+  if (devis.signedAt) {
+    doc.text(`Signé électroniquement le ${new Date(devis.signedAt).toLocaleDateString('fr-FR')}`, 20, y)
+  }
 
   // ---- Footer on all pages ----
   const pageCount = doc.internal.getNumberOfPages()

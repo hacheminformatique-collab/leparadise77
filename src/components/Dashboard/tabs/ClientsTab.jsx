@@ -351,21 +351,54 @@ export default function ClientsTab() {
             <div style={{ marginTop: '16px' }}>
               <h5 style={{ color: '#1a1a2e', marginBottom: '10px' }}>📎 Documents client</h5>
               {(() => {
-                const docs = getDocs(selected.id)
+                const storedDocs = getDocs(selected.id)
+                const docs = (storedDocs && Object.keys(storedDocs).length > 0) ? storedDocs : (selected.documents || {})
                 return (
                   <div style={{ fontSize: '13px' }}>
                     {[['cni_recto', "CNI recto"], ['cni_verso', "CNI verso"], ['assurance', "Attestation assurance"]].map(([key, label]) => (
                       <div key={key} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #eee' }}>
                         <Voyant ok={!!docs[key]} />
                         <span>{label}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: '11px', color: docs[key] ? '#27ae60' : '#e74c3c' }}>
+                        <span style={{ marginLeft: 'auto', fontSize: '11px', color: docs[key] ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {docs[key] ? '✅ Reçu' : '⏳ Manquant'}
+                          {docs[key] && (
+                            <button
+                              style={{ background: 'none', border: '1px solid #3498db', color: '#3498db', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
+                              onClick={() => window.open(docs[key], '_blank')}
+                            >
+                              👁️ Voir
+                            </button>
+                          )}
                         </span>
                       </div>
                     ))}
                   </div>
                 )
               })()}
+            </div>
+
+            {/* Signature */}
+            <div style={{ marginTop: '16px' }}>
+              <h5 style={{ color: '#1a1a2e', marginBottom: '10px' }}>✍️ Signature</h5>
+              {selected.signature ? (
+                <div style={{ fontSize: '13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', gap: '6px' }}>
+                    <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#27ae60', flexShrink: 0 }} />
+                    <span style={{ color: '#27ae60', fontWeight: '600' }}>Devis signé</span>
+                  </div>
+                  <img src={selected.signature} alt="Signature client" style={{ maxWidth: '100%', border: '1px solid #ccc', borderRadius: '6px', background: 'white', display: 'block' }} />
+                  {selected.signedAt && (
+                    <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+                      Signé le {new Date(selected.signedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#e74c3c', flexShrink: 0 }} />
+                  <span style={{ color: '#888' }}>⏳ En attente de signature</span>
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: '16px' }}>

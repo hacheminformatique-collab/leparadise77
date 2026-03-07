@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { startAutoRefresh, stopAutoRefresh, onDataRefresh, offDataRefresh } from '../../utils/storage'
 import MesInfosTab from './tabs/MesInfosTab'
 import MotDePasseTab from './tabs/MotDePasseTab'
 import FormuleSalleTab from './tabs/FormuleSalleTab'
@@ -32,23 +33,34 @@ const TABS = [
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('clients')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
+  useEffect(() => {
+    const handleRefresh = () => setRefreshKey((k) => k + 1)
+    onDataRefresh(handleRefresh)
+    startAutoRefresh(5000)
+    return () => {
+      stopAutoRefresh()
+      offDataRefresh(handleRefresh)
+    }
+  }, [])
+
   function renderTab() {
     switch (activeTab) {
-      case 'clients':     return <ClientsTab />
-      case 'calendar':    return <CalendarTab />
-      case 'compta':      return <ComptabiliteTab />
-      case 'staff':       return <StaffTab />
-      case 'stock':       return <StockTab />
-      case 'matieres':    return <MatieresTab />
-      case 'formules':    return <FormuleSalleTab />
-      case 'menus':       return <MenuTab />
-      case 'gateaux':     return <GateauTab />
-      case 'prestations': return <PrestationTab />
-      case 'infos':       return <MesInfosTab />
-      case 'motdepasse':  return <MotDePasseTab />
+      case 'clients':     return <ClientsTab key={refreshKey} />
+      case 'calendar':    return <CalendarTab key={refreshKey} />
+      case 'compta':      return <ComptabiliteTab key={refreshKey} />
+      case 'staff':       return <StaffTab key={refreshKey} />
+      case 'stock':       return <StockTab key={refreshKey} />
+      case 'matieres':    return <MatieresTab key={refreshKey} />
+      case 'formules':    return <FormuleSalleTab key={refreshKey} />
+      case 'menus':       return <MenuTab key={refreshKey} />
+      case 'gateaux':     return <GateauTab key={refreshKey} />
+      case 'prestations': return <PrestationTab key={refreshKey} />
+      case 'infos':       return <MesInfosTab key={refreshKey} />
+      case 'motdepasse':  return <MotDePasseTab key={refreshKey} />
       default: return null
     }
   }

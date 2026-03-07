@@ -17,8 +17,31 @@ function getDocs(devisId) {
   try { return JSON.parse(localStorage.getItem(getDocsKey(devisId))) || {} } catch { return {} }
 }
 
+async function fetchDocsFromServer(devisId) {
+  try {
+    const key = getDocsKey(devisId)
+    const res = await fetch(`/api/storage.php?key=${encodeURIComponent(key)}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data && typeof data === 'object') {
+        try { localStorage.setItem(key, JSON.stringify(data)) } catch { /* ignore */ }
+        return data
+      }
+    }
+  } catch { /* server unreachable – fall back to localStorage */ }
+  return null
+}
+
 function saveDocs(devisId, docs) {
-  localStorage.setItem(getDocsKey(devisId), JSON.stringify(docs))
+  const key = getDocsKey(devisId)
+  localStorage.setItem(key, JSON.stringify(docs))
+  fetch(`/api/storage.php?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(docs),
+  }).catch((err) => {
+    console.warn('[EspaceClient] Failed to sync docs to server:', err)
+  })
 }
 
 function Voyant({ ok }) {
@@ -87,6 +110,14 @@ export default function EspaceClient() {
       window.removeEventListener('focus', reload)
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchDocsFromServer(devisId).then((serverDocs) => {
+      if (!cancelled && serverDocs) setDocs(serverDocs)
+    })
+    return () => { cancelled = true }
+  }, [devisId])
 
   if (!devis) {
     return (

@@ -15,6 +15,100 @@ const KEYS = {
 }
 
 // ---------------------------------------------------------------------------
+// Sync status tracking
+// ---------------------------------------------------------------------------
+const RETRY_QUEUE_KEY = 'paradise_retry_queue'
+const MAX_RETRIES = 3
+const RETRY_DELAYS = [1000, 2000, 4000]
+
+let _syncStatus = {
+  pending: 0,
+  synced: 0,
+  failed: 0,
+  offline: false,
+}
+
+const _syncListeners = new Set()
+
+function _notifySyncListeners() {
+  _syncListeners.forEach((cb) => {
+    try { cb({ ..._syncStatus }) } catch { /* ignore listener errors */ }
+  })
+}
+
+function _updateSyncStatus(patch) {
+  _syncStatus = { ..._syncStatus, ...patch }
+  _notifySyncListeners()
+}
+
+export function getSyncStatus() {
+  return { ..._syncStatus }
+}
+
+export function onSyncStatusChange(callback) {
+  _syncListeners.add(callback)
+}
+
+export function offSyncStatusChange(callback) {
+  _syncListeners.delete(callback)
+}
+
+// ---------------------------------------------------------------------------
+// Retry queue – persists across page reloads via localStorage
+// ---------------------------------------------------------------------------
+function _loadRetryQueue() {
+  try {
+    const raw = localStorage.getItem(RETRY_QUEUE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function _saveRetryQueue(queue) {
+  try { localStorage.setItem(RETRY_QUEUE_KEY, JSON.stringify(queue)) } catch { /* ignore */ }
+}
+
+async function _postToServer(key, data) {
+  const res = await fetch(`/api/storage.php?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Server responded ${res.status}`)
+}
+
+async function _postWithRetry(key, data, attempt = 0) {
+  try {
+    await _postToServer(key, data)
+    // Remove from retry queue on success, then update status
+    const queue = _loadRetryQueue().filter((item) => item.key !== key)
+    _saveRetryQueue(queue)
+    _updateSyncStatus({ pending: Math.max(0, _syncStatus.pending - 1), offline: false, synced: _syncStatus.synced + 1 })
+  } catch (err) {
+    if (attempt < MAX_RETRIES) {
+      setTimeout(() => _postWithRetry(key, data, attempt + 1), RETRY_DELAYS[attempt])
+    } else {
+      console.warn(`[storage] Failed to persist key "${key}" to server after ${MAX_RETRIES} retries:`, err)
+      // Persist to retry queue so it survives page reload, then update status
+      const queue = _loadRetryQueue().filter((item) => item.key !== key)
+      queue.push({ key, data, timestamp: Date.now() })
+      _saveRetryQueue(queue)
+      _updateSyncStatus({ pending: Math.max(0, _syncStatus.pending - 1), offline: true, failed: _syncStatus.failed + 1 })
+    }
+  }
+}
+
+export function retryFailedWrites() {
+  // Snapshot and clear the queue before retrying to prevent duplicate retries
+  const queue = _loadRetryQueue()
+  if (queue.length === 0) return
+  _saveRetryQueue([])
+  queue.forEach(({ key, data }) => {
+    _updateSyncStatus({ pending: _syncStatus.pending + 1 })
+    _postWithRetry(key, data, 0)
+  })
+}
+
+// ---------------------------------------------------------------------------
 // In-memory cache – populated by initStorage() before the app first renders.
 // All get/save functions operate on this cache so they stay synchronous.
 // ---------------------------------------------------------------------------
@@ -83,18 +177,12 @@ function _get(key) {
   return val !== undefined ? val : null
 }
 
-// Write to cache, persist to localStorage as backup, and async-POST to server
+// Write to cache, persist to localStorage as backup, and async-POST to server with retry
 function _save(key, data) {
   _cache[key] = data
   try { localStorage.setItem(key, JSON.stringify(data)) } catch { /* localStorage may be unavailable */ }
-  fetch(`/api/storage.php?key=${encodeURIComponent(key)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  }).catch((err) => {
-    // Server unavailable – data is already safe in localStorage
-    console.warn(`[storage] Failed to persist key "${key}" to server:`, err)
-  })
+  _updateSyncStatus({ pending: _syncStatus.pending + 1 })
+  return _postWithRetry(key, data, 0)
 }
 
 /**
@@ -189,4 +277,14 @@ export function generateDevisNumber() {
   const todayDevis = clients.filter((c) => c.devisNumber && c.devisNumber.startsWith(todayPrefix))
   const nextNum = String(todayDevis.length + 1).padStart(3, '0')
   return `${todayPrefix}${nextNum}`
+}
+
+export function notifyNewDevis(devis) {
+  fetch('/api/notify.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(devis),
+  }).catch((err) => {
+    console.warn('[storage] Failed to send new devis notification:', err)
+  })
 }

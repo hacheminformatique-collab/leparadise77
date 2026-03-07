@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getClients, saveClients, generateDevisNumber } from '../../../utils/storage'
+import { getClients, saveClients, generateDevisNumber, notifyNewDevis } from '../../../utils/storage'
 import { generatePDF } from '../../PDF/generatePDF'
 
 function vatBreakdown(ttc, rate) {
@@ -57,6 +57,7 @@ export default function Step7Summary({ data, onBack, onSubmit }) {
     }
     const clients = getClients()
     saveClients([...clients, devis])
+    notifyNewDevis(devis)
     setDevisId(id)
     setDevisNumber(devisNumber)
     setSubmitted(true)

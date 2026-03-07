@@ -8,6 +8,21 @@ function getDocs(devisId) {
   try { return JSON.parse(localStorage.getItem(getDocsKey(devisId))) || {} } catch { return {} }
 }
 
+async function fetchDocsFromServer(devisId) {
+  try {
+    const key = getDocsKey(devisId)
+    const res = await fetch(`/api/storage.php?key=${encodeURIComponent(key)}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data && typeof data === 'object') {
+        try { localStorage.setItem(key, JSON.stringify(data)) } catch { /* ignore */ }
+        return data
+      }
+    }
+  } catch { /* server unreachable - fall back to localStorage */ }
+  return null
+}
+
 function formatMoney(n) {
   return Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €'
 }
@@ -70,12 +85,17 @@ export default function ClientsTab() {
   const [newPayment, setNewPayment] = useState({ date: new Date().toISOString().split('T')[0], montant: '', mode: 'Virement' })
   const [editMode, setEditMode] = useState(false)
   const [editData, setEditData] = useState(null)
+  const [fetchedDocs, setFetchedDocs] = useState({})
+  const [fetchingDocKey, setFetchingDocKey] = useState(null)
   const selectedRef = useRef(null)
   const isMobile = useIsMobile()
 
   const settings = getSettings()
 
   useEffect(() => { selectedRef.current = selected }, [selected]) // Keep ref in sync for interval callback to avoid stale closure
+
+  // Clear fetched docs cache when selected client changes
+  useEffect(() => { setFetchedDocs({}) }, [selected?.id])
 
   useEffect(() => {
     function reload() {
@@ -90,6 +110,29 @@ export default function ClientsTab() {
     window.addEventListener('focus', reload)
     return () => { clearInterval(id); window.removeEventListener('focus', reload) }
   }, [])
+
+  async function handleViewDoc(devisId, docKey) {
+    setFetchingDocKey(docKey)
+    try {
+      // Check localStorage first for cached data
+      const local = getDocs(devisId)
+      if (local[docKey]) {
+        setFetchedDocs((prev) => ({ ...prev, [docKey]: local[docKey] }))
+        window.open(local[docKey], '_blank')
+        return
+      }
+      // Fetch from server
+      const serverDocs = await fetchDocsFromServer(devisId)
+      if (serverDocs && serverDocs[docKey]) {
+        setFetchedDocs((prev) => ({ ...prev, ...serverDocs }))
+        window.open(serverDocs[docKey], '_blank')
+      } else {
+        alert('Document introuvable sur le serveur.')
+      }
+    } finally {
+      setFetchingDocKey(null)
+    }
+  }
 
   function handleDelete(id) {
     if (!confirm('Supprimer ce devis ?')) return
@@ -497,22 +540,36 @@ export default function ClientsTab() {
             <div style={{ marginTop: '16px' }}>
               <h5 style={{ color: '#1a1a2e', marginBottom: '10px' }}>📎 Documents client</h5>
               {(() => {
-                const storedDocs = getDocs(selected.id)
-                const docs = (storedDocs && Object.keys(storedDocs).length > 0) ? storedDocs : (selected.documents || {})
+                // Use documentsUploaded markers (lightweight booleans) for status indicators.
+                // For legacy records that still have an embedded documents object, fall back
+                // to detecting presence there, but never embed base64 data again.
+                const markers = selected.documentsUploaded || {}
+                const legacyDocs = selected.documents || {}
+                const isUploaded = (key) => !!(markers[key] || legacyDocs[key] || fetchedDocs[key])
                 return (
                   <div style={{ fontSize: '13px' }}>
                     {[['cni_recto', "CNI recto"], ['cni_verso', "CNI verso"], ['assurance', "Attestation assurance"]].map(([key, label]) => (
                       <div key={key} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #eee' }}>
-                        <Voyant ok={!!docs[key]} />
+                        <Voyant ok={isUploaded(key)} />
                         <span>{label}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: '11px', color: docs[key] ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {docs[key] ? '✅ Reçu' : '⏳ Manquant'}
-                          {docs[key] && (
+                        <span style={{ marginLeft: 'auto', fontSize: '11px', color: isUploaded(key) ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {isUploaded(key) ? '✅ Reçu' : '⏳ Manquant'}
+                          {isUploaded(key) && (
                             <button
                               style={{ background: 'none', border: '1px solid #3498db', color: '#3498db', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
-                              onClick={() => window.open(docs[key], '_blank')}
+                              disabled={fetchingDocKey === key}
+                              onClick={() => {
+                                // If we already have the data URL (fetched or legacy), open directly
+                                if (fetchedDocs[key]) {
+                                  window.open(fetchedDocs[key], '_blank')
+                                } else if (legacyDocs[key]) {
+                                  window.open(legacyDocs[key], '_blank')
+                                } else {
+                                  handleViewDoc(selected.id || selected.devisNumber, key)
+                                }
+                              }}
                             >
-                              👁️ Voir
+                              {fetchingDocKey === key ? '⏳' : '👁️ Voir'}
                             </button>
                           )}
                         </span>

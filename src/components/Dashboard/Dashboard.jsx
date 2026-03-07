@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import MesInfosTab from './tabs/MesInfosTab'
 import MotDePasseTab from './tabs/MotDePasseTab'
 import FormuleSalleTab from './tabs/FormuleSalleTab'
@@ -30,7 +31,9 @@ const TABS = [
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('clients')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   function renderTab() {
     switch (activeTab) {
@@ -68,6 +71,20 @@ export default function Dashboard() {
         boxShadow: '0 2px 12px rgba(28,28,46,0.25)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* Hamburger button — mobile only */}
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{
+                background: 'none', border: 'none', color: 'white',
+                fontSize: '22px', cursor: 'pointer', padding: '4px 8px',
+                lineHeight: 1, flexShrink: 0,
+              }}
+              aria-label="Ouvrir le menu"
+            >
+              ☰
+            </button>
+          )}
           {/* Gold ornament */}
           <div style={{ width: '2px', height: '32px', background: 'var(--gold)' }} />
           <div>
@@ -97,7 +114,19 @@ export default function Dashboard() {
         </button>
       </header>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+
+        {/* ── Mobile sidebar backdrop ───────────────────────────────────── */}
+        {isMobile && sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(28,28,46,0.55)',
+              zIndex: 200,
+            }}
+          />
+        )}
 
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <nav style={{
@@ -109,13 +138,34 @@ export default function Dashboard() {
           flexShrink: 0,
           overflowY: 'auto',
           padding: '16px 0',
+          ...(isMobile ? {
+            position: 'fixed',
+            top: 0,
+            left: sidebarOpen ? 0 : '-240px',
+            height: '100%',
+            zIndex: 300,
+            transition: 'left 0.25s ease',
+            boxShadow: sidebarOpen ? '4px 0 16px rgba(28,28,46,0.2)' : 'none',
+          } : {}),
         }}>
+          {/* Mobile sidebar close button */}
+          {isMobile && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 12px 4px' }}>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-light)' }}
+                aria-label="Fermer le menu"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); if (isMobile) setSidebarOpen(false) }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -147,7 +197,7 @@ export default function Dashboard() {
         </nav>
 
         {/* ── Main content ────────────────────────────────────────────────── */}
-        <main style={{ flex: 1, padding: '32px 36px', overflowY: 'auto', minWidth: 0 }}>
+        <main style={{ flex: 1, padding: 'clamp(16px, 3vw, 32px) clamp(16px, 3vw, 36px)', overflowY: 'auto', minWidth: 0 }}>
           {/* Page title */}
           <div style={{ marginBottom: '28px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
             <h2 style={{ fontSize: '1.6rem', fontWeight: '600', letterSpacing: '0.02em', color: 'var(--dark)' }}>

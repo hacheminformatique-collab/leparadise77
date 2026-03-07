@@ -50,7 +50,7 @@ export default function AdminLogin() {
       <div style={{
         background: 'var(--white)',
         borderRadius: 'var(--radius-lg)',
-        padding: '48px 40px',
+        padding: 'clamp(24px, 5vw, 48px) clamp(20px, 5vw, 40px)',
         maxWidth: '380px',
         width: '100%',
         boxShadow: '0 24px 64px rgba(0,0,0,0.25)',

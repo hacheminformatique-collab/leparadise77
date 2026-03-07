@@ -311,3 +311,52 @@ hr {
 ::-webkit-scrollbar-track { background: var(--offwhite); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ─── Responsive — Tablette (max-width: 1024px) ─────────────────────────────── */
+@media (max-width: 1024px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.6rem; }
+  h3 { font-size: 1.25rem; }
+
+  .card { padding: 20px; }
+
+  .modal {
+    padding: 28px;
+    max-width: 96vw;
+  }
+
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* ─── Responsive — Mobile (max-width: 768px) ────────────────────────────────── */
+@media (max-width: 768px) {
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.2rem; }
+
+  .btn-lg { padding: 12px 20px; font-size: 13px; width: 100%; }
+
+  .card { padding: 16px; }
+
+  .modal {
+    padding: 20px;
+    margin: 10px;
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+  .modal-overlay { padding: 10px; align-items: flex-end; }
+
+  table { font-size: 12px; }
+  th, td { padding: 8px 10px; }
+
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .flex-between { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+  .form-control { font-size: 16px; }
+
+  .info-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+
+  .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+}

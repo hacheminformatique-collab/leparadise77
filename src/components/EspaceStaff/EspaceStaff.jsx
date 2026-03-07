@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { getStaff, saveStaff, getClients } from '../../utils/storage'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -23,6 +24,7 @@ export default function EspaceStaff() {
   const [pinNew, setPinNew] = useState('')
   const [pinConfirm, setPinConfirm] = useState('')
   const [pinMsg, setPinMsg] = useState(null)
+  const isMobile = useIsMobile()
 
   // Auth check — redirect to home if not authenticated
   if (!sessionStorage.getItem(`staffAuth_${staffId}`)) {
@@ -107,7 +109,7 @@ export default function EspaceStaff() {
     <div style={{ minHeight: '100vh', background: '#f8f5f0', paddingBottom: '40px' }}>
       {/* Header */}
       <div style={{ background: '#1a1a2e', padding: '20px 24px' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '8px' : 0 }}>
           <div>
             <div style={{ color: '#c9a84c', fontWeight: '800', fontSize: '20px' }}>LE PARADISE</div>
             <div style={{ color: '#aaa', fontSize: '12px' }}>Espace staff</div>

@@ -42,7 +42,7 @@ export default function HomePage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '40px 20px',
+      padding: 'clamp(20px, 4vw, 40px) 16px',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -54,7 +54,7 @@ export default function HomePage() {
       }} />
 
       {/* Top horizontal rule */}
-      <div style={{ position: 'absolute', top: '40px', left: '50%', transform: 'translateX(-50%)', width: '320px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ position: 'absolute', top: '40px', left: '50%', transform: 'translateX(-50%)', width: 'min(320px, 80vw)', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{ flex: 1, height: '1px', background: 'rgba(184,151,74,0.35)' }} />
         <div style={{ color: 'rgba(184,151,74,0.5)', fontSize: '14px', letterSpacing: '0.3em' }}>✦</div>
         <div style={{ flex: 1, height: '1px', background: 'rgba(184,151,74,0.35)' }} />
@@ -98,11 +98,11 @@ export default function HomePage() {
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center' }}>
 
-          <button onClick={() => navigate('/devis')} className="btn btn-primary btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
+          <button onClick={() => navigate('/devis')} className="btn btn-primary btn-lg" style={{ width: '100%', maxWidth: '300px', justifyContent: 'center', fontSize: '13px' }}>
             Demander un devis
           </button>
 
-          <button onClick={() => setShowClientInput((v) => !v)} className="btn btn-outline btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
+          <button onClick={() => setShowClientInput((v) => !v)} className="btn btn-outline btn-lg" style={{ width: '100%', maxWidth: '300px', justifyContent: 'center', fontSize: '13px' }}>
             Espace client
           </button>
 
@@ -113,7 +113,8 @@ export default function HomePage() {
               border: '1px solid rgba(184,151,74,0.3)',
               borderRadius: '12px',
               padding: '22px',
-              width: '300px',
+              width: '100%',
+              maxWidth: '300px',
               textAlign: 'left',
             }}>
               <p style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', fontWeight: '700' }}>
@@ -140,7 +141,7 @@ export default function HomePage() {
             </div>
           )}
 
-          <button onClick={() => setShowStaffInput((v) => !v)} className="btn btn-outline btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
+          <button onClick={() => setShowStaffInput((v) => !v)} className="btn btn-outline btn-lg" style={{ width: '100%', maxWidth: '300px', justifyContent: 'center', fontSize: '13px' }}>
             Espace staff
           </button>
 
@@ -151,7 +152,8 @@ export default function HomePage() {
               border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: '12px',
               padding: '22px',
-              width: '300px',
+              width: '100%',
+              maxWidth: '300px',
               textAlign: 'left',
             }}>
               <p style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', fontWeight: '700' }}>
@@ -199,13 +201,13 @@ export default function HomePage() {
             </div>
           )}
 
-          <button onClick={() => navigate('/admin')} className="btn btn-outline btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
+          <button onClick={() => navigate('/admin')} className="btn btn-outline btn-lg" style={{ width: '100%', maxWidth: '300px', justifyContent: 'center', fontSize: '13px' }}>
             🔐 Administration
           </button>
         </div>
 
         {/* Footer info */}
-        <div style={{ marginTop: '60px', padding: '20px 0', borderTop: '1px solid rgba(184,151,74,0.2)' }}>
+        <div style={{ marginTop: 'clamp(30px, 5vw, 60px)', padding: '20px 0', borderTop: '1px solid rgba(184,151,74,0.2)' }}>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', lineHeight: '2' }}>
             SARL AFM — 5 avenue Fridingen, 77100 Nanteuil les Meaux<br />
             📞 0782281582 — ✉️ contact@leparadise77.fr

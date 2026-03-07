@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getMenus, saveMenus } from '../../../utils/storage'
+import PhotoUpload from '../PhotoUpload'
 
 const SECTIONS = ['Cocktail de bienvenu', 'Entrée', 'Plats', 'Desserts', 'Menu enfants', 'Boissons']
 
@@ -29,6 +30,7 @@ function MenuModal({ item, onSave, onClose }) {
           <label>Description</label>
           <input className="form-control" value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} />
         </div>
+        <PhotoUpload value={data.photo || ''} onChange={(v) => setData({ ...data, photo: v })} label="Photo du menu" />
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
           <button className="btn btn-primary" onClick={() => { if (data.nomMenu.trim()) onSave(data) }}>Sauvegarder</button>

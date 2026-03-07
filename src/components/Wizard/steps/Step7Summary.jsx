@@ -143,6 +143,12 @@ export default function Step7Summary({ data, onBack, onSubmit }) {
               <tr>
                 <td style={{ padding: '8px 12px' }}>
                   Traiteur & Gâteau ({nbPersonnes} pers.)
+                  {data.gateau && data.gateauPersonnalisation && (
+                    <div style={{ fontSize: '11px', color: '#aaa' }}>
+                      {data.gateau.nomGateau} — Niv.2: {data.gateauPersonnalisation.niv2} | Niv.3: {data.gateauPersonnalisation.niv3} | Niv.4: {data.gateauPersonnalisation.niv4}
+                      {data.gateauPersonnalisation.initiales ? ` | Initiales: ${data.gateauPersonnalisation.initiales}` : ''}
+                    </div>
+                  )}
                   <div style={{ fontSize: '12px', color: '#888' }}>TVA 10%</div>
                 </td>
                 <td style={{ padding: '8px 12px', textAlign: 'right' }}>{traiteur.ht.toFixed(2)} €</td>

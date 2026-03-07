@@ -24,6 +24,7 @@ export default function AdminLogin() {
     const settings = getSettings()
     if (pin === settings.pin) {
       saveLoginAttempts({ count: 0, blockedUntil: null })
+      sessionStorage.setItem('adminAuth', '1')
       navigate('/dashboard')
     } else {
       const attempts = getLoginAttempts()
@@ -40,12 +41,43 @@ export default function AdminLogin() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e, #0f3460)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div className="card" style={{ maxWidth: '380px', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>🔐</div>
-          <h2 style={{ color: '#1a1a2e', fontWeight: '800' }}>Espace Admin</h2>
-          <p className="text-muted">LE PARADISE</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(160deg, #14142a 0%, #1c1c3a 55%, #10101e 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '20px',
+    }}>
+      <div style={{
+        background: 'var(--white)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '48px 40px',
+        maxWidth: '380px',
+        width: '100%',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
+        border: '1px solid var(--border-light)',
+      }}>
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--text-light)', marginBottom: '8px', fontWeight: '700' }}>
+            Administration
+          </p>
+          <h1 style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: '2rem',
+            fontWeight: '500',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--dark)',
+            marginBottom: '12px',
+          }}>
+            Le Paradise
+          </h1>
+          {/* Gold rule */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <div style={{ width: '40px', height: '1px', background: 'var(--gold)' }} />
+            <div style={{ color: 'var(--gold)', fontSize: '12px' }}>✦</div>
+            <div style={{ width: '40px', height: '1px', background: 'var(--gold)' }} />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -58,25 +90,37 @@ export default function AdminLogin() {
               onChange={(e) => setPin(e.target.value)}
               placeholder="••••"
               maxLength={10}
-              style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '6px' }}
+              style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', padding: '14px' }}
               autoFocus
             />
           </div>
 
           {error && (
-            <div style={{ background: '#fff3f3', border: '1px solid #f5c6cb', borderRadius: '8px', padding: '10px 14px', color: '#721c24', fontSize: '13px', marginBottom: '16px' }}>
+            <div style={{
+              background: '#fef0ef',
+              border: '1px solid #fad5d3',
+              borderRadius: 'var(--radius-sm)',
+              padding: '10px 14px',
+              color: 'var(--danger)',
+              fontSize: '13px',
+              marginBottom: '16px',
+            }}>
               ⚠️ {error}
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary w-100" style={{ justifyContent: 'center' }}>
+          <button type="submit" className="btn btn-primary w-100" style={{ justifyContent: 'center', padding: '13px', fontSize: '13px', marginTop: '4px' }}>
             Se connecter
           </button>
         </form>
 
         <button
           onClick={() => navigate('/')}
-          style={{ display: 'block', margin: '16px auto 0', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '13px' }}
+          style={{
+            display: 'block', margin: '20px auto 0', background: 'none', border: 'none',
+            color: 'var(--text-light)', cursor: 'pointer', fontSize: '13px',
+            fontFamily: 'var(--font-body)', letterSpacing: '0.05em',
+          }}
         >
           ← Retour à l&apos;accueil
         </button>

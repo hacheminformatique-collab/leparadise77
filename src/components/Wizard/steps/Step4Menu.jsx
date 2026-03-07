@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { getMenus } from '../../../utils/storage'
 
 const SECTION_ORDER = ['Cocktail de bienvenu', 'Entrée', 'Plats', 'Desserts', 'Menu enfants', 'Boissons']
@@ -16,6 +17,29 @@ export default function Step4Menu({ data, onChange, onNext, onBack }) {
   const nbAdultes = parseInt(data.nbAdultes) || data.nbPersonnes || 0
   const nbEnfants = parseInt(data.nbEnfants) || 0
 
+  // Auto-select "Menu enfants" when nbEnfants > 0
+  useEffect(() => {
+    if (nbEnfants > 0) {
+      const enfantsMenu = allMenus.find((m) => m.section === 'Menu enfants')
+      if (enfantsMenu) {
+        const alreadySelected = (data.menus || []).some((m) => m.section === 'Menu enfants')
+        if (!alreadySelected) {
+          const others = (data.menus || []).filter((m) => m.section !== 'Menu enfants')
+          onChange('menus', [...others, enfantsMenu])
+        }
+      }
+    } else {
+      // Remove if nbEnfants = 0
+      const withoutEnfants = (data.menus || []).filter((m) => m.section !== 'Menu enfants')
+      if (withoutEnfants.length !== (data.menus || []).length) {
+        onChange('menus', withoutEnfants)
+      }
+    }
+    // Intentionally only depends on nbEnfants to avoid infinite loop
+    // (onChange and data.menus would cause re-runs on every menu selection)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nbEnfants])
+
   const sections = SECTION_ORDER.filter((s) => allMenus.some((m) => m.section === s))
 
   function isSelected(menuId) {
@@ -23,6 +47,8 @@ export default function Step4Menu({ data, onChange, onNext, onBack }) {
   }
 
   function toggle(menu) {
+    // Menu enfants cannot be deselected if nbEnfants > 0
+    if (menu.section === 'Menu enfants' && nbEnfants > 0) return
     if (isSelected(menu.id)) {
       onChange('menus', selected.filter((m) => m.id !== menu.id))
     } else {
@@ -82,6 +108,9 @@ export default function Step4Menu({ data, onChange, onNext, onBack }) {
                       transition: 'all 0.15s',
                     }}
                   >
+                    {item.photo ? (
+                      <img src={item.photo} alt={item.nomMenu} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px', marginBottom: '8px' }} />
+                    ) : null}
                     <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>{item.nomMenu}</div>
                     {item.description && <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>{item.description}</div>}
                     <div style={{ fontWeight: '700', color: item.tarif > 0 ? '#c9a84c' : '#27ae60' }}>

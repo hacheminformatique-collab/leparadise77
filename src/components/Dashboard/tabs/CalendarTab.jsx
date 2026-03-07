@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getClients, saveClients, getStaff } from '../../../utils/storage'
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
@@ -196,6 +196,13 @@ export default function CalendarTab() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [allClients, setAllClients] = useState(getClients())
   const [dragSource, setDragSource] = useState(null)
+
+  useEffect(() => {
+    function reload() { setAllClients(getClients()) }
+    const id = setInterval(reload, 5000)
+    window.addEventListener('focus', reload)
+    return () => { clearInterval(id); window.removeEventListener('focus', reload) }
+  }, [])
 
   const clients = allClients.filter((c) => c.dateEvenement && c.status !== 'annulé')
   const eventsByDate = {}

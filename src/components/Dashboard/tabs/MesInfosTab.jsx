@@ -33,7 +33,7 @@ export default function MesInfosTab() {
         </div>
         <div className="form-group">
           <label>WhatsApp (numéro ou lien)</label>
-          <input className="form-control" value={data.whatsapp || ''} onChange={(e) => handleChange('whatsapp', e.target.value)} placeholder="0782281582" />
+          <input className="form-control" value={data.whatsapp || ''} onChange={(e) => handleChange('whatsapp', e.target.value)} placeholder="0782821582" />
         </div>
 
         <hr style={{ margin: '20px 0', borderColor: '#eee' }} />

@@ -14,6 +14,12 @@ const KEYS = {
   matieresPremieresRecettes: 'paradise_matieres_recettes',
 }
 
+// ---------------------------------------------------------------------------
+// In-memory cache – populated by initStorage() before the app first renders.
+// All get/save functions operate on this cache so they stay synchronous.
+// ---------------------------------------------------------------------------
+const _cache = {}
+
 const DEFAULTS = {
   settings: {
     nom: 'LE PARADISE',
@@ -71,65 +77,105 @@ const DEFAULTS = {
   matieresPremieresRecettes: [],
 }
 
-function get(key) {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+// Read from in-memory cache (synchronous)
+function _get(key) {
+  const val = _cache[key]
+  return val !== undefined ? val : null
 }
 
-function save(key, data) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
-
-export function initDefaults() {
-  Object.entries(KEYS).forEach(([name, key]) => {
-    if (localStorage.getItem(key) === null) {
-      save(key, DEFAULTS[name])
-    }
+// Write to cache, persist to localStorage as backup, and async-POST to server
+function _save(key, data) {
+  _cache[key] = data
+  try { localStorage.setItem(key, JSON.stringify(data)) } catch { /* localStorage may be unavailable */ }
+  fetch(`/api/storage.php?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch((err) => {
+    // Server unavailable – data is already safe in localStorage
+    console.warn(`[storage] Failed to persist key "${key}" to server:`, err)
   })
 }
 
-export const getSettings = () => get(KEYS.settings) || DEFAULTS.settings
-export const saveSettings = (data) => save(KEYS.settings, data)
+/**
+ * Load all storage keys into the in-memory cache.
+ * Priority: PHP server → localStorage → built-in defaults.
+ * Must be awaited once in App.jsx before the React tree renders.
+ */
+export async function initStorage() {
+  await Promise.all(
+    Object.entries(KEYS).map(async ([name, key]) => {
+      // 1. Try server
+      try {
+        const res = await fetch(`/api/storage.php?key=${encodeURIComponent(key)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data !== null && data !== undefined) {
+            _cache[key] = data
+            return
+          }
+        }
+      } catch { /* server unreachable or returned an error – proceed to fallback */ }
 
-export const getFormules = () => get(KEYS.formules) || DEFAULTS.formules
-export const saveFormules = (data) => save(KEYS.formules, data)
+      // 2. Fall back to localStorage
+      try {
+        const raw = localStorage.getItem(key)
+        if (raw !== null) {
+          _cache[key] = JSON.parse(raw)
+          return
+        }
+      } catch { /* localStorage may be corrupted – proceed to defaults */ }
 
-export const getMenus = () => get(KEYS.menus) || DEFAULTS.menus
-export const saveMenus = (data) => save(KEYS.menus, data)
+      // 3. Nothing found – initialise with defaults and persist them
+      _cache[key] = DEFAULTS[name]
+      _save(key, DEFAULTS[name])
+    })
+  )
+}
 
-export const getGateaux = () => get(KEYS.gateaux) || DEFAULTS.gateaux
-export const saveGateaux = (data) => save(KEYS.gateaux, data)
+/** @deprecated Use initStorage() instead. Kept for compatibility. */
+export function initDefaults() {
+  // No-op: data initialisation is now handled by initStorage() in App.jsx
+}
 
-export const getPrestations = () => get(KEYS.prestations) || DEFAULTS.prestations
-export const savePrestations = (data) => save(KEYS.prestations, data)
+export const getSettings = () => _get(KEYS.settings) || DEFAULTS.settings
+export const saveSettings = (data) => _save(KEYS.settings, data)
 
-export const getClients = () => get(KEYS.clients) || []
-export const saveClients = (data) => save(KEYS.clients, data)
+export const getFormules = () => _get(KEYS.formules) || DEFAULTS.formules
+export const saveFormules = (data) => _save(KEYS.formules, data)
 
-export const getLoginAttempts = () => get(KEYS.loginAttempts) || DEFAULTS.loginAttempts
-export const saveLoginAttempts = (data) => save(KEYS.loginAttempts, data)
+export const getMenus = () => _get(KEYS.menus) || DEFAULTS.menus
+export const saveMenus = (data) => _save(KEYS.menus, data)
 
-export const getStaff = () => get(KEYS.staff) || []
-export const saveStaff = (data) => save(KEYS.staff, data)
+export const getGateaux = () => _get(KEYS.gateaux) || DEFAULTS.gateaux
+export const saveGateaux = (data) => _save(KEYS.gateaux, data)
 
-export const getStockSec = () => get(KEYS.stockSec) || []
-export const saveStockSec = (data) => save(KEYS.stockSec, data)
+export const getPrestations = () => _get(KEYS.prestations) || DEFAULTS.prestations
+export const savePrestations = (data) => _save(KEYS.prestations, data)
 
-export const getStockMatiere = () => get(KEYS.stockMatiere) || []
-export const saveStockMatiere = (data) => save(KEYS.stockMatiere, data)
+export const getClients = () => _get(KEYS.clients) || []
+export const saveClients = (data) => _save(KEYS.clients, data)
 
-export const getStockBoisson = () => get(KEYS.stockBoisson) || []
-export const saveStockBoisson = (data) => save(KEYS.stockBoisson, data)
+export const getLoginAttempts = () => _get(KEYS.loginAttempts) || DEFAULTS.loginAttempts
+export const saveLoginAttempts = (data) => _save(KEYS.loginAttempts, data)
 
-export const getIngredients = () => get(KEYS.ingredients) || []
-export const saveIngredients = (data) => save(KEYS.ingredients, data)
+export const getStaff = () => _get(KEYS.staff) || []
+export const saveStaff = (data) => _save(KEYS.staff, data)
 
-export const getMatieresPremieresRecettes = () => get(KEYS.matieresPremieresRecettes) || []
-export const saveMatieresPremieresRecettes = (data) => save(KEYS.matieresPremieresRecettes, data)
+export const getStockSec = () => _get(KEYS.stockSec) || []
+export const saveStockSec = (data) => _save(KEYS.stockSec, data)
+
+export const getStockMatiere = () => _get(KEYS.stockMatiere) || []
+export const saveStockMatiere = (data) => _save(KEYS.stockMatiere, data)
+
+export const getStockBoisson = () => _get(KEYS.stockBoisson) || []
+export const saveStockBoisson = (data) => _save(KEYS.stockBoisson, data)
+
+export const getIngredients = () => _get(KEYS.ingredients) || []
+export const saveIngredients = (data) => _save(KEYS.ingredients, data)
+
+export const getMatieresPremieresRecettes = () => _get(KEYS.matieresPremieresRecettes) || []
+export const saveMatieresPremieresRecettes = (data) => _save(KEYS.matieresPremieresRecettes, data)
 
 export function generateDevisNumber() {
   const now = new Date()

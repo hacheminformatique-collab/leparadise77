@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { getClients, saveClients, getSettings } from '../../../utils/storage'
+import { useState, useEffect, useRef } from 'react'
+import { getClients, saveClients, getSettings, getPrestations, getMenus, getGateaux } from '../../../utils/storage'
 import { generatePDF } from '../../PDF/generatePDF'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 
@@ -68,9 +68,28 @@ export default function ClientsTab() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [newPayment, setNewPayment] = useState({ date: new Date().toISOString().split('T')[0], montant: '', mode: 'Virement' })
+  const [editMode, setEditMode] = useState(false)
+  const [editData, setEditData] = useState(null)
+  const selectedRef = useRef(null)
   const isMobile = useIsMobile()
 
   const settings = getSettings()
+
+  useEffect(() => { selectedRef.current = selected }, [selected]) // Keep ref in sync for interval callback to avoid stale closure
+
+  useEffect(() => {
+    function reload() {
+      const fresh = getClients()
+      setClients(fresh)
+      if (selectedRef.current) {
+        const refreshed = fresh.find((c) => c.id === selectedRef.current.id)
+        if (refreshed) setSelected(refreshed)
+      }
+    }
+    const id = setInterval(reload, 5000)
+    window.addEventListener('focus', reload)
+    return () => { clearInterval(id); window.removeEventListener('focus', reload) }
+  }, [])
 
   function handleDelete(id) {
     if (!confirm('Supprimer ce devis ?')) return
@@ -152,6 +171,61 @@ export default function ClientsTab() {
     }
   }
 
+  function startEditDevis() {
+    setEditData({
+      nbAdultes: String(parseInt(selected.nbAdultes) || selected.nbPersonnes || 0),
+      nbEnfants: String(parseInt(selected.nbEnfants) || 0),
+      prixSalle: String(selected.prixSalle || 0),
+      prestations: [...(selected.prestations || [])],
+      menus: [...(selected.menus || [])],
+      gateau: selected.gateau || null,
+    })
+    setEditMode(true)
+  }
+
+  function handleSaveDevis() {
+    const nbA = parseInt(editData.nbAdultes) || 0
+    const nbE = parseInt(editData.nbEnfants) || 0
+    const updated = clients.map((c) =>
+      c.id === selected.id ? {
+        ...c,
+        nbAdultes: nbA,
+        nbEnfants: nbE,
+        nbPersonnes: nbA + nbE,
+        prixSalle: parseFloat(editData.prixSalle) || 0,
+        prestations: editData.prestations,
+        menus: editData.menus,
+        gateau: editData.gateau,
+      } : c
+    )
+    saveClients(updated)
+    setClients(updated)
+    const refreshed = updated.find((c) => c.id === selected.id)
+    setSelected(refreshed)
+    setEditMode(false)
+    setEditData(null)
+  }
+
+  function toggleEditPrestation(presta) {
+    const exists = editData.prestations.some((p) => p.id === presta.id)
+    setEditData((prev) => ({
+      ...prev,
+      prestations: exists
+        ? prev.prestations.filter((p) => p.id !== presta.id)
+        : [...prev.prestations, presta],
+    }))
+  }
+
+  function toggleEditMenu(menu) {
+    const exists = editData.menus.some((m) => m.id === menu.id)
+    setEditData((prev) => ({
+      ...prev,
+      menus: exists
+        ? prev.menus.filter((m) => m.id !== menu.id)
+        : [...prev.menus, menu],
+    }))
+  }
+
   const filtered = clients.filter((c) =>
     (c.nom || '').toLowerCase().includes(search.toLowerCase()) ||
     (c.prenom || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -224,7 +298,7 @@ export default function ClientsTab() {
           <div className="card" style={{ position: 'sticky', top: '0', alignSelf: 'start', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="flex-between mb-2">
               <h4 style={{ color: '#1a1a2e' }}>{selected.devisNumber}</h4>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }} onClick={() => setSelected(null)}>✕</button>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }} onClick={() => { setSelected(null); setEditMode(false); setEditData(null) }}>✕</button>
             </div>
 
             <div style={{ fontSize: '14px', lineHeight: '1.8' }}>
@@ -233,31 +307,103 @@ export default function ClientsTab() {
               <p><strong>Téléphone :</strong> {selected.telephone}</p>
               <p><strong>Événement :</strong> {selected.typeEvenement}</p>
               <p><strong>Date :</strong> {selected.dateEvenement ? new Date(selected.dateEvenement).toLocaleDateString('fr-FR') : '—'}</p>
-              <p><strong>Invités :</strong> {selected.nbPersonnes}</p>
               <p><strong>Formule :</strong> {selected.formule?.nomFormule}</p>
-              {selected.menus?.length > 0 && (
-                <div>
-                  <strong>Menus :</strong>
-                  <ul style={{ paddingLeft: '16px' }}>
-                    {selected.menus.map((m) => (
-                      <li key={m.id}>{m.nomMenu} — {m.tarif > 0 ? `${m.tarif} €/pers.` : 'Inclus'}</li>
+
+              {editMode && editData ? (
+                <div style={{ background: '#f8f5f0', borderRadius: '8px', padding: '12px', marginTop: '8px' }}>
+                  <div style={{ fontWeight: '600', marginBottom: '10px', color: '#1a1a2e' }}>✏️ Modifier le devis</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#888' }}>Adultes</label>
+                      <input type="number" min="0" className="form-control" value={editData.nbAdultes}
+                        onChange={(e) => setEditData((d) => ({ ...d, nbAdultes: e.target.value }))}
+                        style={{ fontSize: '12px', padding: '6px 10px' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#888' }}>Enfants</label>
+                      <input type="number" min="0" className="form-control" value={editData.nbEnfants}
+                        onChange={(e) => setEditData((d) => ({ ...d, nbEnfants: e.target.value }))}
+                        style={{ fontSize: '12px', padding: '6px 10px' }} />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ fontSize: '11px', color: '#888' }}>Prix salle (€)</label>
+                    <input type="number" min="0" className="form-control" value={editData.prixSalle}
+                      onChange={(e) => setEditData((d) => ({ ...d, prixSalle: e.target.value }))}
+                      style={{ fontSize: '12px', padding: '6px 10px' }} />
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>Menus</label>
+                    {getMenus().map((m) => (
+                      <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '4px', cursor: 'pointer' }}>
+                        <input type="checkbox"
+                          checked={editData.menus.some((em) => em.id === m.id)}
+                          onChange={() => toggleEditMenu(m)} />
+                        {m.nomMenu}{m.tarif > 0 ? ` — ${m.tarif} €/pers.` : ' (Inclus)'}
+                      </label>
                     ))}
-                  </ul>
-                </div>
-              )}
-              {selected.gateau && <p><strong>Gâteau :</strong> {selected.gateau.nomGateau}</p>}
-              {selected.prestations?.length > 0 && (
-                <div>
-                  <strong>Prestations :</strong>
-                  <ul style={{ paddingLeft: '16px' }}>
-                    {selected.prestations.map((p) => (
-                      <li key={p.id}>{p.nomPresta} — {p.tarif} €</li>
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>Gâteau</label>
+                    <select className="form-control" style={{ fontSize: '12px', padding: '6px 10px' }}
+                      value={editData.gateau?.id || ''}
+                      onChange={(e) => {
+                        const g = getGateaux().find((x) => x.id === e.target.value) || null
+                        setEditData((d) => ({ ...d, gateau: g }))
+                      }}>
+                      <option value="">— Aucun —</option>
+                      {getGateaux().map((g) => (
+                        <option key={g.id} value={g.id}>{g.nomGateau} — {g.tarif} €/pers.</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>Prestations</label>
+                    {getPrestations().map((p) => (
+                      <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '4px', cursor: 'pointer' }}>
+                        <input type="checkbox"
+                          checked={editData.prestations.some((ep) => ep.id === p.id)}
+                          onChange={() => toggleEditPrestation(p)} />
+                        {p.nomPresta} — {p.tarif} €
+                      </label>
                     ))}
-                  </ul>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-primary btn-sm" onClick={handleSaveDevis}>💾 Sauvegarder</button>
+                    <button className="btn btn-sm" style={{ background: '#eee', color: '#444' }} onClick={() => { setEditMode(false); setEditData(null) }}>Annuler</button>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <p><strong>Invités :</strong> {selected.nbPersonnes} ({parseInt(selected.nbAdultes) || selected.nbPersonnes || 0} adultes + {parseInt(selected.nbEnfants) || 0} enfants)</p>
+                  {selected.menus?.length > 0 && (
+                    <div>
+                      <strong>Menus :</strong>
+                      <ul style={{ paddingLeft: '16px' }}>
+                        {selected.menus.map((m) => (
+                          <li key={m.id}>{m.nomMenu} — {m.tarif > 0 ? `${m.tarif} €/pers.` : 'Inclus'}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selected.gateau && <p><strong>Gâteau :</strong> {selected.gateau.nomGateau}</p>}
+                  {selected.prestations?.length > 0 && (
+                    <div>
+                      <strong>Prestations :</strong>
+                      <ul style={{ paddingLeft: '16px' }}>
+                        {selected.prestations.map((p) => (
+                          <li key={p.id}>{p.nomPresta} — {p.tarif} €</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <hr style={{ margin: '12px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ margin: 0 }}><strong>Total TTC :</strong> <span style={{ color: '#c9a84c', fontWeight: '700', fontSize: '18px' }}>{formatMoney(calcTotal(selected))}</span></p>
+                    <button className="btn btn-sm btn-outline" onClick={startEditDevis}>✏️ Modifier le devis</button>
+                  </div>
+                </>
               )}
-              <hr style={{ margin: '12px 0' }} />
-              <p><strong>Total TTC :</strong> <span style={{ color: '#c9a84c', fontWeight: '700', fontSize: '18px' }}>{formatMoney(calcTotal(selected))}</span></p>
             </div>
 
             {/* Payment progress */}
@@ -431,6 +577,20 @@ export default function ClientsTab() {
                 style={{ fontSize: '11px' }}
                 onClick={(e) => e.target.select()}
               />
+              {selected.telephone && (
+                <a
+                  href={buildWhatsAppLink(selected.telephone, `Bonjour ${selected.prenom}, voici le lien vers votre espace client Le Paradise : ${window.location.origin}/espace-client/${selected.devisNumber}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px',
+                    background: '#25D366', color: 'white', padding: '8px 14px',
+                    borderRadius: '8px', textDecoration: 'none', fontWeight: '600', fontSize: '13px',
+                  }}
+                >
+                  💬 Envoyer le lien espace client via WhatsApp
+                </a>
+              )}
             </div>
           </div>
         )}

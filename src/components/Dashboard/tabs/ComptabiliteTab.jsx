@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getClients, getStaff, getMatieresPremieresRecettes, getIngredients } from '../../../utils/storage'
 
 function calcTotal(devis) {
@@ -51,12 +51,19 @@ function formatMoney(n) {
 }
 
 export default function ComptabiliteTab() {
-  const clients = getClients()
+  const [clients, setClients] = useState(() => getClients())
   const staff = getStaff()
   const recettes = getMatieresPremieresRecettes()
   const ingredients = getIngredients()
 
   const [filter, setFilter] = useState('all')
+
+  useEffect(() => {
+    function reload() { setClients(getClients()) }
+    const id = setInterval(reload, 5000)
+    window.addEventListener('focus', reload)
+    return () => { clearInterval(id); window.removeEventListener('focus', reload) }
+  }, [])
 
   const today = new Date().toISOString().split('T')[0]
 

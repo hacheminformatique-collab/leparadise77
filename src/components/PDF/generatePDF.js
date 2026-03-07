@@ -87,7 +87,7 @@ export function generatePDF(devis) {
   doc.setTextColor(200, 200, 200)
   doc.text('Salle de réception — Nanteuil les Meaux', 20, 26)
   doc.text('5 avenue Fridingen, 77100 Nanteuil les Meaux', 20, 32)
-  doc.text('Tel: 0782281582 | contact@leparadise77.fr', 20, 38)
+  doc.text('Tel: 0782821582 | contact@leparadise77.fr', 20, 38)
 
   // Devis title on right
   doc.setTextColor(255, 255, 255)

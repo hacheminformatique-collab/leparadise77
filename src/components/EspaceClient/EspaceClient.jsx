@@ -71,6 +71,9 @@ export default function EspaceClient() {
   const [signatureData, setSignatureData] = useState(devis?.signature || null)
   const [showSig, setShowSig] = useState(false)
   const [docs, setDocs] = useState(() => getDocs(devisId))
+  const [activeTab, setActiveTab] = useState('devis')
+  const [invites, setInvites] = useState(() => devis?.invites || [])
+  const [newInvite, setNewInvite] = useState({ nom: '', prenom: '', categorie: 'adulte', allergies: '' })
   const isMobile = useIsMobile()
 
   useEffect(() => {
@@ -150,10 +153,33 @@ export default function EspaceClient() {
     setClients(updatedClients)
   }
 
+  function handleAddInvite() {
+    if (!newInvite.nom || !newInvite.prenom) return
+    const invite = { ...newInvite, id: Date.now().toString() }
+    const updatedInvites = [...invites, invite]
+    setInvites(updatedInvites)
+    const updatedClients = clients.map((c) =>
+      (c.id === devisId || c.devisNumber === devisId) ? { ...c, invites: updatedInvites } : c
+    )
+    saveClients(updatedClients)
+    setClients(updatedClients)
+    setNewInvite({ nom: '', prenom: '', categorie: 'adulte', allergies: '' })
+  }
+
+  function handleDeleteInvite(id) {
+    const updatedInvites = invites.filter((inv) => inv.id !== id)
+    setInvites(updatedInvites)
+    const updatedClients = clients.map((c) =>
+      (c.id === devisId || c.devisNumber === devisId) ? { ...c, invites: updatedInvites } : c
+    )
+    saveClients(updatedClients)
+    setClients(updatedClients)
+  }
+
   const statusColor = devis.status === 'signé' ? '#27ae60' : devis.status === 'annulé' ? '#e74c3c' : '#c9a84c'
 
   // Build WhatsApp link - normalize phone to international format (France)
-  const rawPhone = (settings.whatsapp || '0782281582').replace(/\s/g, '')
+  const rawPhone = (settings.whatsapp || '0782821582').replace(/\s/g, '')
   const intlPhone = rawPhone.startsWith('+') ? rawPhone.replace('+', '') : rawPhone.startsWith('0') ? `33${rawPhone.slice(1)}` : rawPhone
   const whatsappLink = `https://wa.me/${intlPhone}`
 
@@ -194,194 +220,324 @@ export default function EspaceClient() {
           </div>
         </div>
 
-        {/* Event summary */}
-        <div className="card mb-3">
-          <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>🎉 Votre événement</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', fontSize: '14px' }}>
-            <div>
-              <span style={{ color: '#888' }}>Type d&apos;événement</span>
-              <div style={{ fontWeight: '600' }}>{devis.typeEvenement}</div>
-            </div>
-            <div>
-              <span style={{ color: '#888' }}>Date</span>
-              <div style={{ fontWeight: '600' }}>
-                {devis.dateEvenement ? new Date(devis.dateEvenement).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
-              </div>
-            </div>
-            <div>
-              <span style={{ color: '#888' }}>Nombre de personnes</span>
-              <div style={{ fontWeight: '600' }}>{devis.nbPersonnes}</div>
-            </div>
-            <div>
-              <span style={{ color: '#888' }}>Formule</span>
-              <div style={{ fontWeight: '600' }}>{devis.formule?.nomFormule}</div>
-            </div>
-            {devis.heureDebut && (
-              <div>
-                <span style={{ color: '#888' }}>Horaires</span>
-                <div style={{ fontWeight: '600' }}>{devis.heureDebut} — {devis.heureFin}</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Pricing */}
-        <div className="card mb-3">
-          <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>💰 Détail tarifaire</h3>
-          <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
-            <tbody>
-              {prixSalle > 0 && (
-                <tr style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '10px 0' }}>Location salle — {devis.formule?.nomFormule}</td>
-                  <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: '600' }}>{formatMoney(prixSalle)}</td>
-                </tr>
-              )}
-              {(devis.menus || []).filter((m) => m.tarif > 0).map((m) => (
-                <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>
-                    {m.nomMenu}
-                  </td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(calcMenuItemTotal(m))}</td>
-                </tr>
-              ))}
-              {gateauTotal > 0 && (
-                <tr style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>
-                    {devis.gateau?.nomGateau} × {nbPersonnes} pers.
-                    {devis.gateauPersonnalisation && (
-                      <div style={{ fontSize: '11px', color: '#aaa' }}>
-                        Niv.2: {devis.gateauPersonnalisation.niv2} | Niv.3: {devis.gateauPersonnalisation.niv3} | Niv.4: {devis.gateauPersonnalisation.niv4}
-                        {devis.gateauPersonnalisation.initiales ? ` | Initiales: ${devis.gateauPersonnalisation.initiales}` : ''}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(gateauTotal)}</td>
-                </tr>
-              )}
-              {(devis.prestations || []).map((p) => (
-                <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>{p.nomPresta}</td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(p.tarif)}</td>
-                </tr>
-              ))}
-              <tr style={{ background: '#1a1a2e', color: 'white' }}>
-                <td style={{ padding: '14px 12px', fontWeight: '700', fontSize: '16px' }}>TOTAL TTC</td>
-                <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '800', fontSize: '20px', color: '#c9a84c' }}>
-                  {formatMoney(totalTTC)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Balance */}
-        <div className="card mb-3">
-          <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>💳 Solde à régler</h3>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-            <span>Montant total</span>
-            <span style={{ fontWeight: '600' }}>{formatMoney(totalTTC)}</span>
-          </div>
-          {payments.length > 0 && payments.map((p, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#27ae60', marginBottom: '4px' }}>
-              <span>✅ Règlement du {new Date(p.date).toLocaleDateString('fr-FR')} ({p.mode || ''})</span>
-              <span>- {formatMoney(p.montant)}</span>
-            </div>
-          ))}
-          <div style={{ borderTop: '2px solid #1a1a2e', marginTop: '10px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: '700', fontSize: '16px' }}>Solde restant</span>
-            <span style={{ fontWeight: '800', fontSize: '22px', color: soldeRestant <= 0 ? '#27ae60' : '#e74c3c' }}>
-              {formatMoney(Math.max(0, soldeRestant))}
-            </span>
-          </div>
-        </div>
-
-        {/* Bank Info */}
-        {(settings.bankInfo?.iban || settings.bankInfo?.titulaire) && (
-          <div className="card mb-3">
-            <h3 style={{ marginBottom: '12px', color: '#1a1a2e' }}>🏦 Coordonnées bancaires</h3>
-            <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>Pour le règlement par virement :</p>
-            <div style={{ fontSize: '14px', lineHeight: '1.8', background: '#f8f5f0', borderRadius: '8px', padding: '14px' }}>
-              {settings.bankInfo?.titulaire && <div><strong>Titulaire :</strong> {settings.bankInfo.titulaire}</div>}
-              {settings.bankInfo?.iban && <div><strong>IBAN :</strong> {settings.bankInfo.iban}</div>}
-              {settings.bankInfo?.bic && <div><strong>BIC :</strong> {settings.bankInfo.bic}</div>}
-            </div>
-          </div>
-        )}
-
-        {/* Documents */}
-        <div className="card mb-3">
-          <h3 style={{ marginBottom: '4px', color: '#1a1a2e' }}>📎 Documents officiels</h3>
-          <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
-            Veuillez charger les documents requis. Les voyants passent au vert une fois le fichier envoyé.
-          </p>
-          <DocUploadRow label="Carte d'identité — recto" docKey="cni_recto" docs={docs} onChange={handleDocChange} />
-          <DocUploadRow label="Carte d'identité — verso" docKey="cni_verso" docs={docs} onChange={handleDocChange} />
-          <DocUploadRow label="Attestation d'assurance" docKey="assurance" docs={docs} onChange={handleDocChange} />
-        </div>
-
-        {/* Actions */}
-        <div className="card mb-3">
-          <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>📋 Actions</h3>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        {/* Tab navigation */}
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', borderRadius: '12px', padding: '6px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+          {[
+            { key: 'devis', label: '📋 Mon devis' },
+            { key: 'documents', label: '📎 Documents' },
+            { key: 'invites', label: `👥 Invités${invites.length > 0 ? ` (${invites.length})` : ''}` },
+          ].map(({ key, label }) => (
             <button
-              className="btn btn-primary"
-              onClick={() => generatePDF(devis)}
+              key={key}
+              onClick={() => setActiveTab(key)}
+              style={{
+                flex: 1, padding: '10px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                fontWeight: activeTab === key ? '700' : '500', fontSize: isMobile ? '12px' : '14px',
+                background: activeTab === key ? '#1a1a2e' : 'transparent',
+                color: activeTab === key ? '#c9a84c' : '#888',
+                transition: 'all 0.2s',
+              }}
             >
-              📄 Télécharger le devis PDF
+              {label}
             </button>
-
-            {devis.status !== 'signé' && (
-              <button
-                className="btn btn-dark"
-                onClick={() => setShowSig(true)}
-              >
-                ✍️ Signer le devis
-              </button>
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* Signature panel */}
-        {showSig && (
-          <div className="card mb-3">
-            <h3 style={{ marginBottom: '8px', color: '#1a1a2e' }}>✍️ Signature électronique</h3>
-            <p className="text-muted mb-2" style={{ fontSize: '13px' }}>
-              En signant ce devis, vous acceptez les conditions générales de vente.
-            </p>
-            <div style={{ border: '2px dashed #c9a84c', borderRadius: '10px', overflow: 'hidden', background: 'white' }}>
-              <SignatureCanvas
-                ref={sigRef}
-                penColor="#1a1a2e"
-                canvasProps={{ width: 700, height: 180, style: { width: '100%', height: '180px' } }}
-              />
+        {/* Tab: Mon devis */}
+        {activeTab === 'devis' && (
+          <>
+            {/* Event summary */}
+            <div className="card mb-3">
+              <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>🎉 Votre événement</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+                <div>
+                  <span style={{ color: '#888' }}>Type d&apos;événement</span>
+                  <div style={{ fontWeight: '600' }}>{devis.typeEvenement}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#888' }}>Date</span>
+                  <div style={{ fontWeight: '600' }}>
+                    {devis.dateEvenement ? new Date(devis.dateEvenement).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: '#888' }}>Nombre de personnes</span>
+                  <div style={{ fontWeight: '600' }}>{devis.nbPersonnes}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#888' }}>Formule</span>
+                  <div style={{ fontWeight: '600' }}>{devis.formule?.nomFormule}</div>
+                </div>
+                {devis.heureDebut && (
+                  <div>
+                    <span style={{ color: '#888' }}>Horaires</span>
+                    <div style={{ fontWeight: '600' }}>{devis.heureDebut} — {devis.heureFin}</div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-              <button className="btn btn-outline btn-sm" onClick={clearSig}>Effacer</button>
-              <button className="btn btn-primary" onClick={handleSign}>✅ Valider la signature</button>
-              <button className="btn btn-sm" style={{ background: '#eee', color: '#444' }} onClick={() => setShowSig(false)}>Annuler</button>
-            </div>
-          </div>
-        )}
 
-        {/* Signed confirmation */}
-        {signed && signatureData && (
-          <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ color: '#155724', fontWeight: '700', marginBottom: '8px' }}>✅ Devis signé électroniquement</div>
-            <img src={signatureData} alt="Signature" style={{ maxWidth: '200px', border: '1px solid #ccc', borderRadius: '6px', background: 'white' }} />
-            {devis.signedAt && (
-              <div style={{ color: '#155724', fontSize: '12px', marginTop: '8px' }}>
-                Signé le {new Date(devis.signedAt).toLocaleDateString('fr-FR')}
+            {/* Pricing */}
+            <div className="card mb-3">
+              <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>💰 Détail tarifaire</h3>
+              <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {prixSalle > 0 && (
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '10px 0' }}>Location salle — {devis.formule?.nomFormule}</td>
+                      <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: '600' }}>{formatMoney(prixSalle)}</td>
+                    </tr>
+                  )}
+                  {(devis.menus || []).filter((m) => m.tarif > 0).map((m) => (
+                    <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>
+                        {m.nomMenu}
+                      </td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(calcMenuItemTotal(m))}</td>
+                    </tr>
+                  ))}
+                  {gateauTotal > 0 && (
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>
+                        {devis.gateau?.nomGateau} × {nbPersonnes} pers.
+                        {devis.gateauPersonnalisation && (
+                          <div style={{ fontSize: '11px', color: '#aaa' }}>
+                            Niv.2: {devis.gateauPersonnalisation.niv2} | Niv.3: {devis.gateauPersonnalisation.niv3} | Niv.4: {devis.gateauPersonnalisation.niv4}
+                            {devis.gateauPersonnalisation.initiales ? ` | Initiales: ${devis.gateauPersonnalisation.initiales}` : ''}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(gateauTotal)}</td>
+                    </tr>
+                  )}
+                  {(devis.prestations || []).map((p) => (
+                    <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '8px 0', paddingLeft: '16px', color: '#666' }}>{p.nomPresta}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>{formatMoney(p.tarif)}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ background: '#1a1a2e', color: 'white' }}>
+                    <td style={{ padding: '14px 12px', fontWeight: '700', fontSize: '16px' }}>TOTAL TTC</td>
+                    <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '800', fontSize: '20px', color: '#c9a84c' }}>
+                      {formatMoney(totalTTC)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Balance */}
+            <div className="card mb-3">
+              <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>💳 Solde à régler</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                <span>Montant total</span>
+                <span style={{ fontWeight: '600' }}>{formatMoney(totalTTC)}</span>
+              </div>
+              {payments.length > 0 && payments.map((p, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#27ae60', marginBottom: '4px' }}>
+                  <span>✅ Règlement du {new Date(p.date).toLocaleDateString('fr-FR')} ({p.mode || ''})</span>
+                  <span>- {formatMoney(p.montant)}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: '2px solid #1a1a2e', marginTop: '10px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: '700', fontSize: '16px' }}>Solde restant</span>
+                <span style={{ fontWeight: '800', fontSize: '22px', color: soldeRestant <= 0 ? '#27ae60' : '#e74c3c' }}>
+                  {formatMoney(Math.max(0, soldeRestant))}
+                </span>
+              </div>
+            </div>
+
+            {/* Bank Info */}
+            {(settings.bankInfo?.iban || settings.bankInfo?.titulaire) && (
+              <div className="card mb-3">
+                <h3 style={{ marginBottom: '12px', color: '#1a1a2e' }}>🏦 Coordonnées bancaires</h3>
+                <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>Pour le règlement par virement :</p>
+                <div style={{ fontSize: '14px', lineHeight: '1.8', background: '#f8f5f0', borderRadius: '8px', padding: '14px' }}>
+                  {settings.bankInfo?.titulaire && <div><strong>Titulaire :</strong> {settings.bankInfo.titulaire}</div>}
+                  {settings.bankInfo?.iban && <div><strong>IBAN :</strong> {settings.bankInfo.iban}</div>}
+                  {settings.bankInfo?.bic && <div><strong>BIC :</strong> {settings.bankInfo.bic}</div>}
+                </div>
               </div>
             )}
+
+            {/* Actions */}
+            <div className="card mb-3">
+              <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>📋 Actions</h3>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => generatePDF(devis)}
+                >
+                  📄 Télécharger le devis PDF
+                </button>
+
+                {devis.status !== 'signé' && (
+                  <button
+                    className="btn btn-dark"
+                    onClick={() => setShowSig(true)}
+                  >
+                    ✍️ Signer le devis
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Signature panel */}
+            {showSig && (
+              <div className="card mb-3">
+                <h3 style={{ marginBottom: '8px', color: '#1a1a2e' }}>✍️ Signature électronique</h3>
+                <p className="text-muted mb-2" style={{ fontSize: '13px' }}>
+                  En signant ce devis, vous acceptez les conditions générales de vente.
+                </p>
+                <div style={{ border: '2px dashed #c9a84c', borderRadius: '10px', overflow: 'hidden', background: 'white' }}>
+                  <SignatureCanvas
+                    ref={sigRef}
+                    penColor="#1a1a2e"
+                    canvasProps={{ width: 700, height: 180, style: { width: '100%', height: '180px' } }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                  <button className="btn btn-outline btn-sm" onClick={clearSig}>Effacer</button>
+                  <button className="btn btn-primary" onClick={handleSign}>✅ Valider la signature</button>
+                  <button className="btn btn-sm" style={{ background: '#eee', color: '#444' }} onClick={() => setShowSig(false)}>Annuler</button>
+                </div>
+              </div>
+            )}
+
+            {/* Signed confirmation */}
+            {signed && signatureData && (
+              <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                <div style={{ color: '#155724', fontWeight: '700', marginBottom: '8px' }}>✅ Devis signé électroniquement</div>
+                <img src={signatureData} alt="Signature" style={{ maxWidth: '200px', border: '1px solid #ccc', borderRadius: '6px', background: 'white' }} />
+                {devis.signedAt && (
+                  <div style={{ color: '#155724', fontSize: '12px', marginTop: '8px' }}>
+                    Signé le {new Date(devis.signedAt).toLocaleDateString('fr-FR')}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Tab: Documents */}
+        {activeTab === 'documents' && (
+          <div className="card mb-3">
+            <h3 style={{ marginBottom: '4px', color: '#1a1a2e' }}>📎 Documents officiels</h3>
+            <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
+              Veuillez charger les documents requis. Les voyants passent au vert une fois le fichier envoyé.
+            </p>
+            <DocUploadRow label="Carte d'identité — recto" docKey="cni_recto" docs={docs} onChange={handleDocChange} />
+            <DocUploadRow label="Carte d'identité — verso" docKey="cni_verso" docs={docs} onChange={handleDocChange} />
+            <DocUploadRow label="Attestation d'assurance" docKey="assurance" docs={docs} onChange={handleDocChange} />
           </div>
         )}
 
-        {/* Contact + WhatsApp */}
-        <div className="card">
+        {/* Tab: Invités */}
+        {activeTab === 'invites' && (
+          <div>
+            {/* Summary counter */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              {[
+                { label: 'Total invités', value: invites.length, color: '#1a1a2e' },
+                { label: 'Adultes', value: invites.filter((i) => i.categorie === 'adulte').length, color: '#c9a84c' },
+                { label: 'Enfants', value: invites.filter((i) => i.categorie === 'enfant').length, color: '#3498db' },
+              ].map((stat) => (
+                <div key={stat.label} className="card" style={{ flex: '1', minWidth: '100px', textAlign: 'center', padding: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>{stat.label}</div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: stat.color }}>{stat.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Add invite form */}
+            <div className="card mb-3">
+              <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>➕ Ajouter un invité</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Prénom *</label>
+                  <input className="form-control" value={newInvite.prenom}
+                    onChange={(e) => setNewInvite((p) => ({ ...p, prenom: e.target.value }))}
+                    placeholder="Prénom" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Nom *</label>
+                  <input className="form-control" value={newInvite.nom}
+                    onChange={(e) => setNewInvite((p) => ({ ...p, nom: e.target.value }))}
+                    placeholder="Nom" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Catégorie</label>
+                  <select className="form-control" value={newInvite.categorie}
+                    onChange={(e) => setNewInvite((p) => ({ ...p, categorie: e.target.value }))}>
+                    <option value="adulte">Adulte</option>
+                    <option value="enfant">Enfant</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Allergies / régime (optionnel)</label>
+                  <input className="form-control" value={newInvite.allergies}
+                    onChange={(e) => setNewInvite((p) => ({ ...p, allergies: e.target.value }))}
+                    placeholder="Ex: sans gluten, végétarien…" />
+                </div>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={handleAddInvite}
+                disabled={!newInvite.nom || !newInvite.prenom}
+              >
+                ➕ Ajouter l&apos;invité
+              </button>
+            </div>
+
+            {/* Guest list */}
+            <div className="card">
+              <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>👥 Liste des invités</h3>
+              {invites.length === 0 ? (
+                <p style={{ color: '#888', fontSize: '14px', textAlign: 'center', padding: '20px 0' }}>
+                  Aucun invité ajouté pour l&apos;instant.
+                </p>
+              ) : (
+                <div>
+                  {invites.map((inv) => (
+                    <div key={inv.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 0', borderBottom: '1px solid #eee', gap: '8px',
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', fontSize: '14px' }}>{inv.prenom} {inv.nom}</div>
+                        <div style={{ fontSize: '12px', color: '#888', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            background: inv.categorie === 'adulte' ? '#c9a84c22' : '#3498db22',
+                            color: inv.categorie === 'adulte' ? '#c9a84c' : '#3498db',
+                            padding: '2px 8px', borderRadius: '10px', fontWeight: '600',
+                          }}>
+                            {inv.categorie === 'adulte' ? '👤 Adulte' : '🧒 Enfant'}
+                          </span>
+                          {inv.allergies && (
+                            <span style={{ color: '#e67e22' }}>⚠️ {inv.allergies}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteInvite(inv.id)}
+                        style={{ background: 'none', border: '1px solid #e74c3c', color: '#e74c3c', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '13px' }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Contact + WhatsApp (always visible) */}
+        <div className="card" style={{ marginTop: '24px' }}>
           <h3 style={{ marginBottom: '12px', color: '#1a1a2e' }}>📞 Contact</h3>
           <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#555', marginBottom: '16px' }}>
             <p>📍 5 avenue Fridingen, 77100 Nanteuil les Meaux</p>
-            <p>📞 0782281582</p>
+            <p>📞 0782821582</p>
             <p>✉️ contact@leparadise77.fr</p>
             <p>🏢 SARL AFM — RCS de Meaux : 904543816</p>
           </div>

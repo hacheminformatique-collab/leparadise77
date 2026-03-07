@@ -210,7 +210,7 @@ export default function HomePage() {
         <div style={{ marginTop: 'clamp(30px, 5vw, 60px)', padding: '20px 0', borderTop: '1px solid rgba(184,151,74,0.2)' }}>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', lineHeight: '2' }}>
             SARL AFM — 5 avenue Fridingen, 77100 Nanteuil les Meaux<br />
-            📞 0782281582 — ✉️ contact@leparadise77.fr
+            📞 0782821582 — ✉️ contact@leparadise77.fr
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getClients, saveClients, getSettings } from '../../../utils/storage'
 import { generatePDF } from '../../PDF/generatePDF'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 
 function getDocsKey(devisId) { return `paradise_docs_${devisId}` }
 function getDocs(devisId) {
@@ -67,6 +68,7 @@ export default function ClientsTab() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [newPayment, setNewPayment] = useState({ date: new Date().toISOString().split('T')[0], montant: '', mode: 'Virement' })
+  const isMobile = useIsMobile()
 
   const settings = getSettings()
 
@@ -172,11 +174,11 @@ export default function ClientsTab() {
           placeholder="🔍 Rechercher..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ width: '240px' }}
+          style={{ width: isMobile ? '100%' : '240px' }}
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 420px' : '1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: selected && !isMobile ? '1fr 420px' : '1fr', gap: '20px' }}>
         <div className="table-container">
           <table>
             <thead>

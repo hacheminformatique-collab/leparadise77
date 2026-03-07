@@ -55,7 +55,7 @@ export default function WizardForm() {
   const showCart = step >= 3
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f5f0', paddingBottom: '80px' }}>
+    <div style={{ minHeight: '100vh', background: '#f8f5f0', paddingBottom: '100px' }}>
       {/* Header */}
       <div style={{ background: '#1a1a2e', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button

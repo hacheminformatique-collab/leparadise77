@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getStaff, saveStaff } from '../../../utils/storage'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 
 const POSTES = ['Serveur', 'Manager', 'Responsable', 'Cuisinier', 'Cuisine', 'Polyvalent', 'Agent de sécurité', 'DJ']
 
@@ -8,6 +9,7 @@ function StaffModal({ item, onSave, onClose }) {
     id: '', nom: '', prenom: '', dateNaissance: '', telephone: '',
     matricule: '', poste: POSTES[0], tarifEvenement: 0, photo: '', cniDoc: '', pin: '1234',
   })
+  const isMobile = useIsMobile()
 
   function handleFile(field) {
     return (e) => {
@@ -25,7 +27,7 @@ function StaffModal({ item, onSave, onClose }) {
         <button className="modal-close" onClick={onClose}>✕</button>
         <h3 className="modal-title">{item ? 'Modifier l\'employé' : 'Nouvel employé'}</h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
           <div className="form-group">
             <label>Prénom</label>
             <input className="form-control" value={data.prenom} onChange={(e) => setData({ ...data, prenom: e.target.value })} />
@@ -145,7 +147,7 @@ export default function StaffTab() {
         <button className="btn btn-primary btn-sm" onClick={() => setModal({})}>+ Ajouter</button>
       </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
         {['Tous', ...POSTES].map((p) => (
           <button
             key={p}

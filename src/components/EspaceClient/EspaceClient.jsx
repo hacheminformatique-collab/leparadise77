@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import SignatureCanvas from 'react-signature-canvas'
 import { getClients, saveClients, getSettings } from '../../utils/storage'
 import { generatePDF } from '../PDF/generatePDF'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 function formatMoney(n) {
   return Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €'
@@ -70,6 +71,7 @@ export default function EspaceClient() {
   const [signatureData, setSignatureData] = useState(devis?.signature || null)
   const [showSig, setShowSig] = useState(false)
   const [docs, setDocs] = useState(() => getDocs(devisId))
+  const isMobile = useIsMobile()
 
   if (!devis) {
     return (
@@ -145,7 +147,7 @@ export default function EspaceClient() {
     <div style={{ minHeight: '100vh', background: '#f8f5f0', paddingBottom: '40px' }}>
       {/* Header */}
       <div style={{ background: '#1a1a2e', padding: '20px 24px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '8px' : 0 }}>
           <div>
             <div style={{ color: '#c9a84c', fontWeight: '800', fontSize: '20px' }}>LE PARADISE</div>
             <div style={{ color: '#aaa', fontSize: '12px' }}>Espace client</div>
@@ -161,7 +163,8 @@ export default function EspaceClient() {
         {/* Status banner */}
         <div style={{
           background: 'white', borderRadius: '12px', padding: '20px', marginBottom: '24px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center',
+          flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : 0,
           borderLeft: `4px solid ${statusColor}`
         }}>
           <div>
@@ -180,7 +183,7 @@ export default function EspaceClient() {
         {/* Event summary */}
         <div className="card mb-3">
           <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>🎉 Votre événement</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', fontSize: '14px' }}>
             <div>
               <span style={{ color: '#888' }}>Type d&apos;événement</span>
               <div style={{ fontWeight: '600' }}>{devis.typeEvenement}</div>

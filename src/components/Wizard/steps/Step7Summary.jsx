@@ -77,7 +77,7 @@ export default function Step7Summary({ data, onBack, onSubmit }) {
           <span style={{ color: '#c9a84c', fontWeight: '800' }}>{devisNumber}</span>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href={`/espace-client/${devisId}`} className="btn btn-primary">
+          <a href={`/espace-client/${devisNumber}`} className="btn btn-primary">
             👤 Accéder à l&apos;espace client
           </a>
           <a href="/" className="btn btn-outline">

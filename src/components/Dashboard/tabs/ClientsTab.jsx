@@ -119,7 +119,7 @@ export default function ClientsTab() {
     if (!docs.assurance) missing.push('attestation d\'assurance')
     if (missing.length === 0) { alert('Tous les documents sont déjà reçus.'); return }
 
-    const espaceUrl = `${window.location.origin}/espace-client/${client.id}`
+    const espaceUrl = `${window.location.origin}/espace-client/${client.devisNumber}`
     const missingList = missing.map((m) => `- ${m}`).join('\n')
     const message = `Bonjour ${client.prenom} ${client.nom},\n\nAfin de finaliser votre dossier pour votre événement du ${client.dateEvenement ? new Date(client.dateEvenement).toLocaleDateString('fr-FR') : '...'}, nous vous invitons à charger les documents manquants suivants :\n${missingList}\n\nVous pouvez les déposer directement sur votre espace client :\n${espaceUrl}\n\nCordialement,\nLe Paradise`
 
@@ -427,7 +427,7 @@ export default function ClientsTab() {
               <input
                 className="form-control"
                 readOnly
-                value={`${window.location.origin}/espace-client/${selected.id}`}
+                value={`${window.location.origin}/espace-client/${selected.devisNumber}`}
                 style={{ fontSize: '11px' }}
                 onClick={(e) => e.target.select()}
               />

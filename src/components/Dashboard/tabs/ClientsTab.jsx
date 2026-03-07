@@ -78,6 +78,49 @@ function buildMailtoLink(email, subject, body) {
   return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
+/**
+ * Convert a base64 data URL to a Blob URL so it can be safely opened in a new tab.
+ * Many browsers silently produce an about:blank tab when window.open() is called
+ * with a long data URL.  Using a Blob URL avoids this browser limitation.
+ *
+ * The returned Blob URL is automatically revoked after 60 seconds to prevent
+ * memory leaks (the tab will already have started loading by then).
+ *
+ * Returns null if the supplied string is not a valid data URL.
+ */
+function dataUrlToBlobUrl(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith('data:')) return null
+  try {
+    const [meta, base64] = dataUrl.split(',')
+    if (!meta || base64 === undefined) return null
+    const mimeMatch = meta.match(/data:([^;]+);base64/)
+    if (!mimeMatch) return null
+    const mimeType = mimeMatch[1]
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    const blob = new Blob([bytes], { type: mimeType })
+    const blobUrl = URL.createObjectURL(blob)
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+    return blobUrl
+  } catch {
+    return null
+  }
+}
+
+function openDoc(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith('data:')) {
+    alert('Document invalide ou manquant.')
+    return
+  }
+  const blobUrl = dataUrlToBlobUrl(dataUrl)
+  if (!blobUrl) {
+    alert('Impossible d\'ouvrir le document.')
+    return
+  }
+  window.open(blobUrl, '_blank', 'noopener,noreferrer')
+}
+
 export default function ClientsTab() {
   const [clients, setClients] = useState(getClients())
   const [search, setSearch] = useState('')
@@ -118,14 +161,14 @@ export default function ClientsTab() {
       const local = getDocs(devisId)
       if (local[docKey]) {
         setFetchedDocs((prev) => ({ ...prev, [docKey]: local[docKey] }))
-        window.open(local[docKey], '_blank')
+        openDoc(local[docKey])
         return
       }
       // Fetch from server
       const serverDocs = await fetchDocsFromServer(devisId)
       if (serverDocs && serverDocs[docKey]) {
         setFetchedDocs((prev) => ({ ...prev, ...serverDocs }))
-        window.open(serverDocs[docKey], '_blank')
+        openDoc(serverDocs[docKey])
       } else {
         alert('Document introuvable sur le serveur.')
       }
@@ -561,9 +604,9 @@ export default function ClientsTab() {
                               onClick={() => {
                                 // If we already have the data URL (fetched or legacy), open directly
                                 if (fetchedDocs[key]) {
-                                  window.open(fetchedDocs[key], '_blank')
+                                  openDoc(fetchedDocs[key])
                                 } else if (legacyDocs[key]) {
-                                  window.open(legacyDocs[key], '_blank')
+                                  openDoc(legacyDocs[key])
                                 } else {
                                   handleViewDoc(selected.id || selected.devisNumber, key)
                                 }

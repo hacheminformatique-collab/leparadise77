@@ -147,7 +147,7 @@ export default function StaffTab() {
         <button className="btn btn-primary btn-sm" onClick={() => setModal({})}>+ Ajouter</button>
       </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
         {['Tous', ...POSTES].map((p) => (
           <button
             key={p}

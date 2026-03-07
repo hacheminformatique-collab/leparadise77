@@ -219,6 +219,37 @@ export async function initStorage() {
       _save(key, DEFAULTS[name])
     })
   )
+
+  // One-time migration: strip any embedded base64 documents from client records.
+  // Previously, EspaceClient stored the full base64 data URL inside the client record,
+  // which caused paradise_clients.json to exceed PHP's post_max_size limit.
+  // Now only lightweight boolean markers (documentsUploaded) are stored there.
+  const clientsKey = KEYS.clients
+  const clientsList = _cache[clientsKey]
+  if (Array.isArray(clientsList)) {
+    let needsMigration = false
+    const migratedClients = clientsList.map((c) => {
+      if (!c.documents) return c
+      // Check if any embedded document value looks like a base64 data URL (long string)
+      const hasBase64 = Object.values(c.documents).some(
+        (v) => typeof v === 'string' && v.length > 1000
+      )
+      if (!hasBase64) return c
+      needsMigration = true
+      // Convert to boolean markers and remove the bulky documents field
+      const docMarkers = {}
+      for (const [k, v] of Object.entries(c.documents)) {
+        if (v) docMarkers[k] = true
+      }
+      const migrated = { ...c, documentsUploaded: { ...(c.documentsUploaded || {}), ...docMarkers } }
+      delete migrated.documents
+      return migrated
+    })
+    if (needsMigration) {
+      _cache[clientsKey] = migratedClients
+      _save(clientsKey, migratedClients)
+    }
+  }
 }
 
 /** @deprecated Use initStorage() instead. Kept for compatibility. */

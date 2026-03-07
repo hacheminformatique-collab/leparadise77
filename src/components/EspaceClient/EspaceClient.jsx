@@ -32,16 +32,24 @@ async function fetchDocsFromServer(devisId) {
   return null
 }
 
-function saveDocs(devisId, docs) {
+async function saveDocs(devisId, docs) {
   const key = getDocsKey(devisId)
   localStorage.setItem(key, JSON.stringify(docs))
-  fetch(`/api/storage.php?key=${encodeURIComponent(key)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(docs),
-  }).catch((err) => {
-    console.warn('[EspaceClient] Failed to sync docs to server:', err)
-  })
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(`/api/storage.php?key=${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(docs),
+      })
+      if (res.ok) return // success
+      console.warn(`[EspaceClient] Doc sync attempt ${attempt + 1} failed: ${res.status}`)
+    } catch (err) {
+      console.warn(`[EspaceClient] Doc sync attempt ${attempt + 1} error:`, err)
+    }
+    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+  }
 }
 
 function Voyant({ ok }) {
@@ -176,12 +184,26 @@ export default function EspaceClient() {
     const updated = { ...docs, [docKey]: dataUrl }
     setDocs(updated)
     saveDocs(devisId, updated)
-    // Also store in client record for dashboard visibility
+    // Store only lightweight markers in client record (NOT the actual base64 data)
+    // This prevents paradise_clients.json from becoming too large for PHP POST limits
+    const docMarkers = {}
+    for (const k of Object.keys(updated)) {
+      docMarkers[k] = true
+    }
     const updatedClients = clients.map((c) =>
-      (c.id === devisId || c.devisNumber === devisId) ? { ...c, documents: updated } : c
+      (c.id === devisId || c.devisNumber === devisId) ? { ...c, documentsUploaded: docMarkers } : c
     )
-    saveClients(updatedClients)
-    setClients(updatedClients)
+    // Remove any legacy embedded documents field to reduce JSON size
+    const cleanedClients = updatedClients.map((c) => {
+      if (c.documents && (c.id === devisId || c.devisNumber === devisId)) {
+        const cleaned = { ...c }
+        delete cleaned.documents
+        return cleaned
+      }
+      return c
+    })
+    saveClients(cleanedClients)
+    setClients(cleanedClients)
   }
 
   function handleAddInvite() {

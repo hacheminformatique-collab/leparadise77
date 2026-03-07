@@ -54,6 +54,80 @@ export function offSyncStatusChange(callback) {
 }
 
 // ---------------------------------------------------------------------------
+// Refresh listeners – notified when server data changes during polling
+// ---------------------------------------------------------------------------
+const _refreshListeners = new Set()
+
+function _notifyRefreshListeners() {
+  _refreshListeners.forEach((cb) => {
+    try { cb() } catch { /* ignore listener errors */ }
+  })
+}
+
+export function onDataRefresh(callback) {
+  _refreshListeners.add(callback)
+}
+
+export function offDataRefresh(callback) {
+  _refreshListeners.delete(callback)
+}
+
+/**
+ * Re-fetch all keys from the server and update the cache if anything changed.
+ * Returns true if at least one key was updated, false otherwise.
+ * Safe to call at any time – if the server is unreachable the cache is kept as-is.
+ */
+export async function refreshFromServer() {
+  let changed = false
+  await Promise.all(
+    Object.entries(KEYS).map(async ([, key]) => {
+      try {
+        const res = await fetch(`/api/storage.php?key=${encodeURIComponent(key)}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data === null || data === undefined) return
+        if (JSON.stringify(_cache[key]) !== JSON.stringify(data)) {
+          _cache[key] = data
+          try { localStorage.setItem(key, JSON.stringify(data)) } catch { /* ignore */ }
+          changed = true
+        }
+      } catch { /* server unreachable – keep cache as-is */ }
+    })
+  )
+  if (changed) _notifyRefreshListeners()
+  return changed
+}
+
+let _autoRefreshInterval = null
+let _visibilityHandler = null
+
+/**
+ * Start polling the server every `intervalMs` milliseconds (default 5 s).
+ * Also refreshes immediately when the user returns to the tab.
+ * Calls stopAutoRefresh() first to prevent duplicate intervals.
+ */
+export function startAutoRefresh(intervalMs = 5000) {
+  stopAutoRefresh()
+  _autoRefreshInterval = setInterval(() => { refreshFromServer() }, intervalMs)
+  _visibilityHandler = () => {
+    if (document.visibilityState === 'visible') refreshFromServer()
+  }
+  document.addEventListener('visibilitychange', _visibilityHandler)
+}
+
+/** Stop the polling interval and remove the visibility listener. */
+export function stopAutoRefresh() {
+  if (_autoRefreshInterval !== null) {
+    clearInterval(_autoRefreshInterval)
+    _autoRefreshInterval = null
+  }
+  if (_visibilityHandler !== null) {
+    document.removeEventListener('visibilitychange', _visibilityHandler)
+    _visibilityHandler = null
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Retry queue – persists across page reloads via localStorage
 // ---------------------------------------------------------------------------
 function _loadRetryQueue() {

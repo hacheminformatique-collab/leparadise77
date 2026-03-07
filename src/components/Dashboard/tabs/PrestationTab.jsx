@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getPrestations, savePrestations } from '../../../utils/storage'
+import PhotoUpload from '../PhotoUpload'
 
 function PrestaModal({ item, onSave, onClose }) {
   const [data, setData] = useState(item || { id: '', nomPresta: '', tarif: 0, description: '', photo: '' })
@@ -21,6 +22,7 @@ function PrestaModal({ item, onSave, onClose }) {
           <label>Description</label>
           <textarea className="form-control" rows={2} value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} />
         </div>
+        <PhotoUpload value={data.photo || ''} onChange={(v) => setData({ ...data, photo: v })} label="Photo de la prestation" />
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
           <button className="btn btn-primary" onClick={() => { if (data.nomPresta.trim()) onSave(data) }}>Sauvegarder</button>

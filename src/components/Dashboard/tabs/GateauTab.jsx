@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getGateaux, saveGateaux } from '../../../utils/storage'
+import PhotoUpload from '../PhotoUpload'
 
 function GateauModal({ item, onSave, onClose }) {
   const [data, setData] = useState(item || { id: '', nomGateau: '', tarif: 0, photo: '' })
@@ -17,6 +18,7 @@ function GateauModal({ item, onSave, onClose }) {
           <label>Tarif (€/pers.)</label>
           <input type="number" step="0.5" className="form-control" value={data.tarif} onChange={(e) => setData({ ...data, tarif: parseFloat(e.target.value) || 0 })} />
         </div>
+        <PhotoUpload value={data.photo || ''} onChange={(v) => setData({ ...data, photo: v })} label="Photo du gâteau" />
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
           <button className="btn btn-primary" onClick={() => { if (data.nomGateau.trim()) onSave(data) }}>Sauvegarder</button>

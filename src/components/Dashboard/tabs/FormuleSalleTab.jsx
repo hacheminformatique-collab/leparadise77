@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getFormules, saveFormules } from '../../../utils/storage'
+import PhotoUpload from '../PhotoUpload'
 
 function FormuleModal({ formule, onSave, onClose }) {
   const [data, setData] = useState(formule || { id: '', nomFormule: '', contenuFormule: '', photo: '' })
@@ -22,6 +23,7 @@ function FormuleModal({ formule, onSave, onClose }) {
           <label>Contenu / description</label>
           <textarea className="form-control" rows={3} value={data.contenuFormule} onChange={(e) => setData({ ...data, contenuFormule: e.target.value })} />
         </div>
+        <PhotoUpload value={data.photo || ''} onChange={(v) => setData({ ...data, photo: v })} label="Photo de la formule" />
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
           <button className="btn btn-primary" onClick={handleSave}>Sauvegarder</button>

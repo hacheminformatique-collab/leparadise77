@@ -73,7 +73,11 @@ export default function Step3Formule({ data, onChange, onNext, onBack }) {
                 transition: 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🏛️</div>
+              {f.photo ? (
+                <img src={f.photo} alt={f.nomFormule} style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }} />
+              ) : (
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🏛️</div>
+              )}
               <h3 style={{ color: '#1a1a2e', marginBottom: '8px' }}>{f.nomFormule}</h3>
               <p className="text-muted" style={{ fontSize: '14px', marginBottom: '16px' }}>{f.contenuFormule}</p>
               <div style={{ fontSize: '24px', fontWeight: '800', color: '#c9a84c' }}>

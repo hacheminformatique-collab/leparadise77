@@ -8,10 +8,18 @@ import GateauTab from './tabs/GateauTab'
 import PrestationTab from './tabs/PrestationTab'
 import ClientsTab from './tabs/ClientsTab'
 import CalendarTab from './tabs/CalendarTab'
+import StaffTab from './tabs/StaffTab'
+import StockTab from './tabs/StockTab'
+import MatieresTab from './tabs/MatieresTab'
+import ComptabiliteTab from './tabs/ComptabiliteTab'
 
 const TABS = [
   { id: 'clients', label: '👥 Clients & Devis' },
   { id: 'calendar', label: '📅 Calendrier' },
+  { id: 'compta', label: '📊 Comptabilité' },
+  { id: 'staff', label: '👷 Staff' },
+  { id: 'stock', label: '📦 Stock' },
+  { id: 'matieres', label: '🥩 Matières premières' },
   { id: 'formules', label: '🏛️ Formules' },
   { id: 'menus', label: '🍽️ Menus' },
   { id: 'gateaux', label: '🎂 Gâteaux' },
@@ -28,6 +36,10 @@ export default function Dashboard() {
     switch (activeTab) {
       case 'clients': return <ClientsTab />
       case 'calendar': return <CalendarTab />
+      case 'compta': return <ComptabiliteTab />
+      case 'staff': return <StaffTab />
+      case 'stock': return <StockTab />
+      case 'matieres': return <MatieresTab />
       case 'formules': return <FormuleSalleTab />
       case 'menus': return <MenuTab />
       case 'gateaux': return <GateauTab />

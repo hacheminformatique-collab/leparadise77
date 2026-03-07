@@ -4,6 +4,7 @@ import AdminLogin from './components/AdminLogin'
 import Dashboard from './components/Dashboard/Dashboard'
 import WizardForm from './components/Wizard/WizardForm'
 import EspaceClient from './components/EspaceClient/EspaceClient'
+import EspaceStaff from './components/EspaceStaff/EspaceStaff'
 import { initDefaults } from './utils/storage'
 
 initDefaults()
@@ -24,6 +25,7 @@ function App() {
         <Route path="/dashboard" element={<ProtectedDashboard />} />
         <Route path="/devis" element={<WizardForm />} />
         <Route path="/espace-client/:devisId" element={<EspaceClient />} />
+        <Route path="/espace-staff/:staffId" element={<EspaceStaff />} />
       </Routes>
     </BrowserRouter>
   )

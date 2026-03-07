@@ -10,6 +10,9 @@ export default function HomePage() {
   const [showClientInput, setShowClientInput] = useState(false)
   const [devisIdInput, setDevisIdInput] = useState('')
   const [clientError, setClientError] = useState('')
+  const [showStaffInput, setShowStaffInput] = useState(false)
+  const [staffIdInput, setStaffIdInput] = useState('')
+  const [staffError, setStaffError] = useState('')
 
   function handleEspaceClient() {
     if (!devisIdInput.trim()) {
@@ -18,6 +21,15 @@ export default function HomePage() {
     }
     setClientError('')
     navigate(`/espace-client/${devisIdInput.trim()}`)
+  }
+
+  function handleEspaceStaff() {
+    if (!staffIdInput.trim()) {
+      setStaffError('Veuillez saisir votre identifiant staff.')
+      return
+    }
+    setStaffError('')
+    navigate(`/espace-staff/${staffIdInput.trim()}`)
   }
 
   return (
@@ -51,6 +63,14 @@ export default function HomePage() {
           >
             👤 Espace client
           </button>
+
+          <button
+            onClick={() => setShowStaffInput((v) => !v)}
+            className="btn"
+            style={{ width: '320px', justifyContent: 'center', background: 'rgba(255,255,255,0.07)', color: '#aaa', border: '1px solid rgba(255,255,255,0.2)', fontSize: '16px', padding: '16px 32px' }}
+          >
+            👷 Espace staff
+          </button>
         </div>
 
         {showClientInput && (
@@ -69,6 +89,28 @@ export default function HomePage() {
               className="btn btn-primary"
               style={{ width: '100%', justifyContent: 'center' }}
               onClick={handleEspaceClient}
+            >
+              Accéder →
+            </button>
+          </div>
+        )}
+
+        {showStaffInput && (
+          <div style={{ marginTop: '24px', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '20px', maxWidth: '320px', margin: '24px auto 0' }}>
+            <p style={{ color: '#ddd', fontSize: '14px', marginBottom: '10px' }}>Saisissez votre identifiant staff :</p>
+            <input
+              type="text"
+              value={staffIdInput}
+              onChange={(e) => setStaffIdInput(e.target.value)}
+              placeholder="Identifiant fourni par le manager"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.9)', marginBottom: '10px', fontSize: '14px', boxSizing: 'border-box' }}
+              onKeyDown={(e) => e.key === 'Enter' && handleEspaceStaff()}
+            />
+            {staffError && <p style={{ color: '#f5a623', fontSize: '13px', marginBottom: '8px' }}>{staffError}</p>}
+            <button
+              className="btn"
+              style={{ width: '100%', justifyContent: 'center', background: '#1a1a2e', color: 'white' }}
+              onClick={handleEspaceStaff}
             >
               Accéder →
             </button>

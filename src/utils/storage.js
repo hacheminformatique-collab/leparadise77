@@ -6,6 +6,12 @@ const KEYS = {
   prestations: 'paradise_prestations',
   clients: 'paradise_clients',
   loginAttempts: 'paradise_login_attempts',
+  staff: 'paradise_staff',
+  stockSec: 'paradise_stock_sec',
+  stockMatiere: 'paradise_stock_matiere',
+  stockBoisson: 'paradise_stock_boisson',
+  ingredients: 'paradise_ingredients',
+  matieresPremieresRecettes: 'paradise_matieres_recettes',
 }
 
 const DEFAULTS = {
@@ -57,6 +63,12 @@ const DEFAULTS = {
   ],
   clients: [],
   loginAttempts: { count: 0, blockedUntil: null },
+  staff: [],
+  stockSec: [],
+  stockMatiere: [],
+  stockBoisson: [],
+  ingredients: [],
+  matieresPremieresRecettes: [],
 }
 
 function get(key) {
@@ -100,6 +112,24 @@ export const saveClients = (data) => save(KEYS.clients, data)
 
 export const getLoginAttempts = () => get(KEYS.loginAttempts) || DEFAULTS.loginAttempts
 export const saveLoginAttempts = (data) => save(KEYS.loginAttempts, data)
+
+export const getStaff = () => get(KEYS.staff) || []
+export const saveStaff = (data) => save(KEYS.staff, data)
+
+export const getStockSec = () => get(KEYS.stockSec) || []
+export const saveStockSec = (data) => save(KEYS.stockSec, data)
+
+export const getStockMatiere = () => get(KEYS.stockMatiere) || []
+export const saveStockMatiere = (data) => save(KEYS.stockMatiere, data)
+
+export const getStockBoisson = () => get(KEYS.stockBoisson) || []
+export const saveStockBoisson = (data) => save(KEYS.stockBoisson, data)
+
+export const getIngredients = () => get(KEYS.ingredients) || []
+export const saveIngredients = (data) => save(KEYS.ingredients, data)
+
+export const getMatieresPremieresRecettes = () => get(KEYS.matieresPremieresRecettes) || []
+export const saveMatieresPremieresRecettes = (data) => save(KEYS.matieresPremieresRecettes, data)
 
 export function generateDevisNumber() {
   const now = new Date()

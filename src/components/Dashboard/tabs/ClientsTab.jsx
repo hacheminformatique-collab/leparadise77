@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getClients, saveClients } from '../../../utils/storage'
+import { getClients, saveClients, getSettings } from '../../../utils/storage'
 import { generatePDF } from '../../PDF/generatePDF'
 
 function getDocsKey(devisId) { return `paradise_docs_${devisId}` }
@@ -37,11 +37,38 @@ function calcTotal(devis) {
   return prixSalle + menuTotal + gateauTotal + prestationsTotal
 }
 
+function PaymentBar({ client }) {
+  const total = calcTotal(client)
+  const paid = (client.payments || []).reduce((s, p) => s + (p.montant || 0), 0)
+  const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0
+  const color = pct >= 100 ? '#27ae60' : pct >= 50 ? '#f39c12' : '#e74c3c'
+  return (
+    <div style={{ minWidth: '90px' }}>
+      <div style={{ background: '#eee', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, background: color, height: '100%', transition: 'width 0.3s' }} />
+      </div>
+      <div style={{ fontSize: '11px', color, marginTop: '2px', textAlign: 'right' }}>{pct}%</div>
+    </div>
+  )
+}
+
+function buildWhatsAppLink(phone, message) {
+  const raw = (phone || '').replace(/\s/g, '')
+  const intl = raw.startsWith('+') ? raw.replace('+', '') : raw.startsWith('0') ? `33${raw.slice(1)}` : raw
+  return `https://wa.me/${intl}?text=${encodeURIComponent(message)}`
+}
+
+function buildMailtoLink(email, subject, body) {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
 export default function ClientsTab() {
   const [clients, setClients] = useState(getClients())
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [newPayment, setNewPayment] = useState({ date: new Date().toISOString().split('T')[0], montant: '', mode: 'Virement' })
+
+  const settings = getSettings()
 
   function handleDelete(id) {
     if (!confirm('Supprimer ce devis ?')) return
@@ -82,6 +109,47 @@ export default function ClientsTab() {
     setSelected(updatedSelected)
   }
 
+  function sendDocumentReminder(client) {
+    const docs = getDocs(client.id)
+    const missing = []
+    if (!docs.cni_recto) missing.push('carte d\'identité recto')
+    if (!docs.cni_verso) missing.push('carte d\'identité verso')
+    if (!docs.assurance) missing.push('attestation d\'assurance')
+    if (missing.length === 0) { alert('Tous les documents sont déjà reçus.'); return }
+
+    const espaceUrl = `${window.location.origin}/espace-client/${client.id}`
+    const missingList = missing.map((m) => `- ${m}`).join('\n')
+    const message = `Bonjour ${client.prenom} ${client.nom},\n\nAfin de finaliser votre dossier pour votre événement du ${client.dateEvenement ? new Date(client.dateEvenement).toLocaleDateString('fr-FR') : '...'}, nous vous invitons à charger les documents manquants suivants :\n${missingList}\n\nVous pouvez les déposer directement sur votre espace client :\n${espaceUrl}\n\nCordialement,\nLe Paradise`
+
+    const phone = client.telephone
+    if (phone) {
+      window.open(buildWhatsAppLink(phone, message), '_blank')
+    } else if (client.email) {
+      window.open(buildMailtoLink(client.email, 'Documents manquants — Le Paradise', message))
+    } else {
+      alert('Aucun moyen de contact disponible pour ce client.')
+    }
+  }
+
+  function sendPaymentReminder(client) {
+    const total = calcTotal(client)
+    const paid = (client.payments || []).reduce((s, p) => s + (p.montant || 0), 0)
+    const solde = total - paid
+    if (solde <= 0) { alert('Ce client n\'a pas de solde restant.'); return }
+
+    const bankInfo = settings.bankInfo || {}
+    const message = `Bonjour ${client.prenom} ${client.nom},\n\nNous vous rappelons que votre versement mensuel est attendu.\n\nSolde restant : ${solde.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €\n\nCoordonnées bancaires :\nTitulaire : ${bankInfo.titulaire || 'SARL AFM'}\nIBAN : ${bankInfo.iban || '—'}\nBIC : ${bankInfo.bic || '—'}\n\nMerci de bien vouloir procéder à votre règlement.\n\nCordialement,\nLe Paradise`
+
+    const phone = client.telephone
+    if (phone) {
+      window.open(buildWhatsAppLink(phone, message), '_blank')
+    } else if (client.email) {
+      window.open(buildMailtoLink(client.email, 'Rappel versement mensuel — Le Paradise', message))
+    } else {
+      alert('Aucun moyen de contact disponible pour ce client.')
+    }
+  }
+
   const filtered = clients.filter((c) =>
     (c.nom || '').toLowerCase().includes(search.toLowerCase()) ||
     (c.prenom || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -117,8 +185,9 @@ export default function ClientsTab() {
                 <th>Client</th>
                 <th>Date événement</th>
                 <th>Total TTC</th>
+                <th>Règlement</th>
                 <th>Statut</th>
-                <th style={{ width: '100px' }}>Actions</th>
+                <th style={{ width: '120px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -127,20 +196,23 @@ export default function ClientsTab() {
                   <td><strong style={{ color: '#c9a84c' }}>{c.devisNumber}</strong></td>
                   <td>{c.prenom} {c.nom}</td>
                   <td>{c.dateEvenement ? new Date(c.dateEvenement).toLocaleDateString('fr-FR') : '—'}</td>
-                  <td><strong>{(c.totalTTC || 0).toLocaleString('fr-FR')} €</strong></td>
+                  <td><strong>{(calcTotal(c) || 0).toLocaleString('fr-FR')} €</strong></td>
+                  <td><PaymentBar client={c} /></td>
                   <td>
                     <span className={`badge ${statusColor(c.status)}`}>{c.status || 'en cours'}</span>
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       <button className="btn btn-sm btn-outline" onClick={() => generatePDF(c)} title="PDF">📄</button>
+                      <button className="btn btn-sm" style={{ background: '#25D366', color: 'white' }} onClick={() => sendDocumentReminder(c)} title="Relance documents">📎</button>
+                      <button className="btn btn-sm" style={{ background: '#3498db', color: 'white' }} onClick={() => sendPaymentReminder(c)} title="Relance paiement">💳</button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleDelete(c.id)} title="Supprimer">🗑️</button>
                     </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="text-center text-muted" style={{ padding: '32px' }}>Aucun devis trouvé</td></tr>
+                <tr><td colSpan={7} className="text-center text-muted" style={{ padding: '32px' }}>Aucun devis trouvé</td></tr>
               )}
             </tbody>
           </table>
@@ -185,6 +257,26 @@ export default function ClientsTab() {
               <hr style={{ margin: '12px 0' }} />
               <p><strong>Total TTC :</strong> <span style={{ color: '#c9a84c', fontWeight: '700', fontSize: '18px' }}>{formatMoney(calcTotal(selected))}</span></p>
             </div>
+
+            {/* Payment progress */}
+            {(() => {
+              const total = calcTotal(selected)
+              const paid = (selected.payments || []).reduce((s, p) => s + (p.montant || 0), 0)
+              const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0
+              const color = pct >= 100 ? '#27ae60' : pct >= 50 ? '#f39c12' : '#e74c3c'
+              return (
+                <div style={{ marginTop: '12px', background: '#f8f5f0', borderRadius: '8px', padding: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span>Progression règlements</span>
+                    <span style={{ color, fontWeight: '700' }}>{formatMoney(paid)} / {formatMoney(total)}</span>
+                  </div>
+                  <div style={{ background: '#ddd', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, background: color, height: '100%', transition: 'width 0.3s' }} />
+                  </div>
+                  <div style={{ fontSize: '11px', color, textAlign: 'right', marginTop: '2px' }}>{pct}% réglé</div>
+                </div>
+              )
+            })()}
 
             {/* Payments section */}
             <div style={{ marginTop: '16px' }}>
@@ -237,6 +329,20 @@ export default function ClientsTab() {
                 </div>
                 <button className="btn btn-primary btn-sm w-100" style={{ justifyContent: 'center' }} onClick={handleAddPayment}>+ Ajouter</button>
               </div>
+            </div>
+
+            {/* Reminders */}
+            <div style={{ marginTop: '16px' }}>
+              <h5 style={{ color: '#1a1a2e', marginBottom: '10px' }}>📲 Relances</h5>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button className="btn btn-sm" style={{ background: '#25D366', color: 'white' }} onClick={() => sendDocumentReminder(selected)}>
+                  📎 Relance documents
+                </button>
+                <button className="btn btn-sm" style={{ background: '#3498db', color: 'white' }} onClick={() => sendPaymentReminder(selected)}>
+                  💳 Relance versement
+                </button>
+              </div>
+              <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>S&apos;ouvre WhatsApp si un téléphone est renseigné, sinon email.</p>
             </div>
 
             {/* Documents status */}
@@ -297,3 +403,4 @@ export default function ClientsTab() {
     </div>
   )
 }
+

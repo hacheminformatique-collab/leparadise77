@@ -53,12 +53,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     // Validate that the body is valid JSON before writing
-    json_decode($body);
+    $incoming = json_decode($body, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid JSON']);
         exit;
     }
+
+    // Special merge logic for paradise_clients to prevent race-condition overwrites.
+    // When the key is paradise_clients we merge the incoming array with the existing
+    // one (keyed by "id" then "devisNumber") so that a stale client posting an older
+    // snapshot cannot silently delete records added by other sessions.
+    if ($key === 'paradise_clients' && is_array($incoming) && file_exists($file)) {
+        $existingJson = file_get_contents($file);
+        $existing = $existingJson !== false ? json_decode($existingJson, true) : null;
+        if (is_array($existing)) {
+            // Build a lookup of existing records by stable id, then merge.
+            $merged = [];
+            $indexById = [];
+            $indexByDevisNumber = [];
+            foreach ($existing as $i => $record) {
+                if (!empty($record['id'])) {
+                    $indexById[$record['id']] = $i;
+                }
+                if (!empty($record['devisNumber'])) {
+                    $indexByDevisNumber[$record['devisNumber']] = $i;
+                }
+                $merged[] = $record;
+            }
+            foreach ($incoming as $record) {
+                $id = !empty($record['id']) ? $record['id'] : null;
+                $devisNumber = !empty($record['devisNumber']) ? $record['devisNumber'] : null;
+                if ($id !== null && isset($indexById[$id])) {
+                    // Overwrite existing record with incoming version (incoming wins)
+                    $merged[$indexById[$id]] = $record;
+                } elseif ($devisNumber !== null && isset($indexByDevisNumber[$devisNumber])) {
+                    $merged[$indexByDevisNumber[$devisNumber]] = $record;
+                } else {
+                    // New record not present in existing data – append it
+                    $merged[] = $record;
+                }
+            }
+            $body = json_encode(array_values($merged));
+        }
+        // If existing data is not a valid array, fall through and overwrite (safe compat fallback)
+    }
+
     if (file_put_contents($file, $body, LOCK_EX) === false) {
         http_response_code(500);
         echo json_encode(['error' => 'Write failed']);

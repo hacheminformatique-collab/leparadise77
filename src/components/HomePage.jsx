@@ -22,16 +22,16 @@ export default function HomePage() {
   }
 
   function handleEspaceStaff() {
-    const id = staffIdInput.trim()
-    if (!id) { setStaffError('Veuillez saisir votre identifiant staff.'); return }
+    const matricule = staffIdInput.trim()
+    if (!matricule) { setStaffError('Veuillez saisir votre matricule.'); return }
     const allStaff = getStaff()
-    const member = allStaff.find((s) => s.id === id)
-    if (!member) { setStaffError('Identifiant staff introuvable.'); return }
+    const member = allStaff.find((s) => s.matricule === matricule)
+    if (!member) { setStaffError('Matricule introuvable.'); return }
     const expectedPin = member.pin || '1234'
     if (staffPinInput !== expectedPin) { setStaffError('Code PIN incorrect.'); return }
     setStaffError('')
-    sessionStorage.setItem(`staffAuth_${id}`, '1')
-    navigate(`/espace-staff/${id}`)
+    sessionStorage.setItem(`staffAuth_${member.id}`, '1')
+    navigate(`/espace-staff/${member.id}`)
   }
 
   return (
@@ -161,7 +161,7 @@ export default function HomePage() {
                 type="text"
                 value={staffIdInput}
                 onChange={(e) => setStaffIdInput(e.target.value)}
-                placeholder="ID fourni par le manager"
+                placeholder="EMP-XXXX"
                 style={{
                   width: '100%', padding: '10px 14px', borderRadius: '6px',
                   border: '1.5px solid rgba(255,255,255,0.2)',
@@ -200,7 +200,7 @@ export default function HomePage() {
           )}
 
           <button onClick={() => navigate('/admin')} className="btn btn-outline btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
-            Admin
+            🔐 Administration
           </button>
         </div>
 

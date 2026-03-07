@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import SignatureCanvas from 'react-signature-canvas'
 import { getClients, saveClients, getSettings } from '../../utils/storage'
@@ -63,7 +63,7 @@ export default function EspaceClient() {
   const navigate = useNavigate()
   const sigRef = useRef(null)
 
-  const clients = getClients()
+  const [clients, setClients] = useState(() => getClients())
   const devis = clients.find((c) => c.id === devisId || c.devisNumber === devisId)
   const settings = getSettings()
 
@@ -72,6 +72,18 @@ export default function EspaceClient() {
   const [showSig, setShowSig] = useState(false)
   const [docs, setDocs] = useState(() => getDocs(devisId))
   const isMobile = useIsMobile()
+
+  useEffect(() => {
+    function reload() {
+      setClients(getClients())
+    }
+    window.addEventListener('storage', reload)
+    window.addEventListener('focus', reload)
+    return () => {
+      window.removeEventListener('storage', reload)
+      window.removeEventListener('focus', reload)
+    }
+  }, [])
 
   if (!devis) {
     return (
@@ -113,9 +125,10 @@ export default function EspaceClient() {
     if (sigRef.current?.isEmpty()) return
     const sigData = sigRef.current.toDataURL()
     const updated = clients.map((c) =>
-      c.id === devisId ? { ...c, signature: sigData, status: 'signé', signedAt: new Date().toISOString() } : c
+      (c.id === devisId || c.devisNumber === devisId) ? { ...c, signature: sigData, status: 'signé', signedAt: new Date().toISOString() } : c
     )
     saveClients(updated)
+    setClients(updated)
     setSignatureData(sigData)
     setSigned(true)
     setShowSig(false)
@@ -131,9 +144,10 @@ export default function EspaceClient() {
     saveDocs(devisId, updated)
     // Also store in client record for dashboard visibility
     const updatedClients = clients.map((c) =>
-      c.id === devisId ? { ...c, documents: updated } : c
+      (c.id === devisId || c.devisNumber === devisId) ? { ...c, documents: updated } : c
     )
     saveClients(updatedClients)
+    setClients(updatedClients)
   }
 
   const statusColor = devis.status === 'signé' ? '#27ae60' : devis.status === 'annulé' ? '#e74c3c' : '#c9a84c'

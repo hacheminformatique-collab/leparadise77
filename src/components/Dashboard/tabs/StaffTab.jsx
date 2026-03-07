@@ -6,7 +6,7 @@ const POSTES = ['Serveur', 'Manager', 'Responsable', 'Cuisinier', 'Cuisine', 'Po
 function StaffModal({ item, onSave, onClose }) {
   const [data, setData] = useState(item || {
     id: '', nom: '', prenom: '', dateNaissance: '', telephone: '',
-    matricule: '', poste: POSTES[0], tarifEvenement: 0, photo: '', cniDoc: '',
+    matricule: '', poste: POSTES[0], tarifEvenement: 0, photo: '', cniDoc: '', pin: '1234',
   })
 
   function handleFile(field) {
@@ -56,6 +56,10 @@ function StaffModal({ item, onSave, onClose }) {
             <label>Forfait par événement (€)</label>
             <input type="number" step="5" className="form-control" value={data.tarifEvenement} onChange={(e) => setData({ ...data, tarifEvenement: parseFloat(e.target.value) || 0 })} />
           </div>
+          <div className="form-group">
+            <label>Code PIN staff</label>
+            <input type="password" className="form-control" value={data.pin || ''} maxLength={4} placeholder="4 chiffres" onChange={(e) => setData({ ...data, pin: e.target.value.replace(/\D/g, '') })} />
+          </div>
         </div>
 
         {/* Photo */}
@@ -101,6 +105,15 @@ export default function StaffTab() {
   const [staff, setStaff] = useState(getStaff())
   const [modal, setModal] = useState(null)
   const [filterPoste, setFilterPoste] = useState('Tous')
+  const [revealedPins, setRevealedPins] = useState(new Set())
+
+  function togglePinReveal(id) {
+    setRevealedPins((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
 
   function handleSave(data) {
     let updated
@@ -166,6 +179,17 @@ export default function StaffTab() {
               {s.dateNaissance && <div>🎂 {new Date(s.dateNaissance + 'T00:00:00').toLocaleDateString('fr-FR')}</div>}
               {s.telephone && <div>📞 {s.telephone}</div>}
               <div style={{ color: '#c9a84c', fontWeight: '700', marginTop: '4px' }}>💰 {(s.tarifEvenement || 0).toLocaleString('fr-FR')} € / événement</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                <span style={{ color: '#555' }}>🔑 PIN :</span>
+                <span style={{ fontFamily: 'monospace' }}>{revealedPins.has(s.id) ? (s.pin || '1234') : '••••'}</span>
+                <button
+                  type="button"
+                  onClick={() => togglePinReveal(s.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#888', padding: '0 4px' }}
+                >
+                  {revealedPins.has(s.id) ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
             {s.cniDoc && (
               <div style={{ marginTop: '8px', fontSize: '12px', color: '#27ae60' }}>✅ Pièce d&apos;identité chargée</div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { getStaff, getClients } from '../../utils/storage'
+import { useParams, useNavigate, Navigate } from 'react-router-dom'
+import { getStaff, saveStaff, getClients } from '../../utils/storage'
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -15,13 +15,22 @@ export default function EspaceStaff() {
   const { staffId } = useParams()
   const navigate = useNavigate()
 
-  const allStaff = getStaff()
-  const member = allStaff.find((s) => s.id === staffId)
-
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
   const [selectedEv, setSelectedEv] = useState(null)
+  const [pinCurrent, setPinCurrent] = useState('')
+  const [pinNew, setPinNew] = useState('')
+  const [pinConfirm, setPinConfirm] = useState('')
+  const [pinMsg, setPinMsg] = useState(null)
+
+  // Auth check — redirect to home if not authenticated
+  if (!sessionStorage.getItem(`staffAuth_${staffId}`)) {
+    return <Navigate to="/" replace />
+  }
+
+  const allStaff = getStaff()
+  const member = allStaff.find((s) => s.id === staffId)
 
   if (!member) {
     return (
@@ -60,6 +69,17 @@ export default function EspaceStaff() {
   function nextMonth() {
     if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1) }
     else setViewMonth((m) => m + 1)
+  }
+
+  function handlePinChange() {
+    const currentPin = member.pin || '1234'
+    if (pinCurrent !== currentPin) { setPinMsg({ type: 'error', text: 'Code PIN actuel incorrect.' }); return }
+    if (!/^\d{4}$/.test(pinNew)) { setPinMsg({ type: 'error', text: 'Le nouveau code doit contenir exactement 4 chiffres.' }); return }
+    if (pinNew !== pinConfirm) { setPinMsg({ type: 'error', text: 'Les codes ne correspondent pas.' }); return }
+    const updated = getStaff().map((s) => s.id === staffId ? { ...s, pin: pinNew } : s)
+    saveStaff(updated)
+    setPinCurrent(''); setPinNew(''); setPinConfirm('')
+    setPinMsg({ type: 'success', text: 'Code PIN modifié avec succès.' })
   }
 
   const firstDay = new Date(viewYear, viewMonth, 1)
@@ -213,6 +233,29 @@ export default function EspaceStaff() {
               })}
             </div>
           )}
+        </div>
+
+        {/* PIN change section */}
+        <div className="card" style={{ marginTop: '24px' }}>
+          <h3 style={{ marginBottom: '16px', color: '#1a1a2e' }}>🔑 Modifier mon code PIN</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '320px' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label style={{ fontSize: '13px' }}>Code actuel</label>
+              <input type="password" className="form-control" value={pinCurrent} maxLength={4} placeholder="••••" onChange={(e) => setPinCurrent(e.target.value.replace(/\D/g, ''))} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label style={{ fontSize: '13px' }}>Nouveau code</label>
+              <input type="password" className="form-control" value={pinNew} maxLength={4} placeholder="4 chiffres" onChange={(e) => setPinNew(e.target.value.replace(/\D/g, ''))} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label style={{ fontSize: '13px' }}>Confirmer nouveau code</label>
+              <input type="password" className="form-control" value={pinConfirm} maxLength={4} placeholder="4 chiffres" onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, ''))} />
+            </div>
+            {pinMsg && (
+              <p style={{ fontSize: '13px', color: pinMsg.type === 'error' ? '#e74c3c' : '#27ae60', margin: 0 }}>{pinMsg.text}</p>
+            )}
+            <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handlePinChange}>Modifier</button>
+          </div>
         </div>
       </div>
 

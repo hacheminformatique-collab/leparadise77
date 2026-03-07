@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getSettings } from '../utils/storage'
+import { getSettings, getStaff } from '../utils/storage'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -12,6 +12,7 @@ export default function HomePage() {
   const [clientError, setClientError] = useState('')
   const [showStaffInput, setShowStaffInput] = useState(false)
   const [staffIdInput, setStaffIdInput] = useState('')
+  const [staffPinInput, setStaffPinInput] = useState('')
   const [staffError, setStaffError] = useState('')
 
   function handleEspaceClient() {
@@ -21,9 +22,16 @@ export default function HomePage() {
   }
 
   function handleEspaceStaff() {
-    if (!staffIdInput.trim()) { setStaffError('Veuillez saisir votre identifiant staff.'); return }
+    const id = staffIdInput.trim()
+    if (!id) { setStaffError('Veuillez saisir votre identifiant staff.'); return }
+    const allStaff = getStaff()
+    const member = allStaff.find((s) => s.id === id)
+    if (!member) { setStaffError('Identifiant staff introuvable.'); return }
+    const expectedPin = member.pin || '1234'
+    if (staffPinInput !== expectedPin) { setStaffError('Code PIN incorrect.'); return }
     setStaffError('')
-    navigate(`/espace-staff/${staffIdInput.trim()}`)
+    sessionStorage.setItem(`staffAuth_${id}`, '1')
+    navigate(`/espace-staff/${id}`)
   }
 
   return (
@@ -132,7 +140,7 @@ export default function HomePage() {
             </div>
           )}
 
-          <button onClick={() => setShowStaffInput((v) => !v)} className="btn btn-sm btn-ghost" style={{ width: '300px', justifyContent: 'center', fontSize: '11px', marginTop: '4px' }}>
+          <button onClick={() => setShowStaffInput((v) => !v)} className="btn btn-outline btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
             Espace staff
           </button>
 
@@ -154,6 +162,23 @@ export default function HomePage() {
                 value={staffIdInput}
                 onChange={(e) => setStaffIdInput(e.target.value)}
                 placeholder="ID fourni par le manager"
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: '6px',
+                  border: '1.5px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'white', fontSize: '14px', marginBottom: '10px',
+                  outline: 'none', fontFamily: 'var(--font-body)',
+                }}
+              />
+              <p style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', fontWeight: '700' }}>
+                Code PIN
+              </p>
+              <input
+                type="password"
+                value={staffPinInput}
+                onChange={(e) => setStaffPinInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="4 chiffres"
+                maxLength={4}
                 onKeyDown={(e) => e.key === 'Enter' && handleEspaceStaff()}
                 style={{
                   width: '100%', padding: '10px 14px', borderRadius: '6px',
@@ -173,6 +198,10 @@ export default function HomePage() {
               </button>
             </div>
           )}
+
+          <button onClick={() => navigate('/admin')} className="btn btn-outline btn-lg" style={{ width: '300px', justifyContent: 'center', fontSize: '13px' }}>
+            Admin
+          </button>
         </div>
 
         {/* Footer info */}
@@ -184,18 +213,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Admin link — discreet */}
-      <button
-        onClick={() => navigate('/admin')}
-        style={{
-          position: 'absolute', bottom: '20px', right: '24px',
-          background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)',
-          fontSize: '11px', cursor: 'pointer', letterSpacing: '0.1em',
-          fontFamily: 'var(--font-body)',
-        }}
-      >
-        Admin
-      </button>
     </div>
   )
 }

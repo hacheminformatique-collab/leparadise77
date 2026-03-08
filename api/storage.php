@@ -1,4 +1,7 @@
 <?php
+ini_set('post_max_size', '20M');
+ini_set('memory_limit', '128M');
+
 // CORS headers – restrict to same host and localhost for local development
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $scheme = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');

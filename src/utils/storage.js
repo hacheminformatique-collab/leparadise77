@@ -115,6 +115,14 @@ export function startAutoRefresh(intervalMs = 5000) {
   document.addEventListener('visibilitychange', _visibilityHandler)
 }
 
+/**
+ * Force an immediate refresh from the server and return whether any data changed.
+ * Convenience alias for refreshFromServer() intended for manual / on-demand calls.
+ */
+export async function forceRefresh() {
+  return refreshFromServer()
+}
+
 /** Stop the polling interval and remove the visibility listener. */
 export function stopAutoRefresh() {
   if (_autoRefreshInterval !== null) {

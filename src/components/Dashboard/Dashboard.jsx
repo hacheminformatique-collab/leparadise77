@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import { startAutoRefresh, stopAutoRefresh, onDataRefresh, offDataRefresh } from '../../utils/storage'
+import { startAutoRefresh, stopAutoRefresh, onDataRefresh, offDataRefresh, refreshFromServer } from '../../utils/storage'
 import MesInfosTab from './tabs/MesInfosTab'
 import MotDePasseTab from './tabs/MotDePasseTab'
 import FormuleSalleTab from './tabs/FormuleSalleTab'
@@ -40,10 +40,16 @@ export default function Dashboard() {
   useEffect(() => {
     const handleRefresh = () => setRefreshKey((k) => k + 1)
     onDataRefresh(handleRefresh)
+    // Refresh immediately on mount so the UI is up-to-date without waiting for the first polling tick
+    refreshFromServer()
     startAutoRefresh(5000)
+    // Also refresh when the browser window regains focus (e.g. user switches back from phone)
+    const handleFocus = () => refreshFromServer()
+    window.addEventListener('focus', handleFocus)
     return () => {
       stopAutoRefresh()
       offDataRefresh(handleRefresh)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [])
 

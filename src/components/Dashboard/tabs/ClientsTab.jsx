@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getClients, saveClients, getSettings, getPrestations, getMenus, getGateaux } from '../../../utils/storage'
+import { getClients, saveClients, getSettings, getPrestations, getMenus, getGateaux, refreshFromServer } from '../../../utils/storage'
 import { generatePDF } from '../../PDF/generatePDF'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 
@@ -20,6 +20,35 @@ async function fetchDocsFromServer(devisId) {
       }
     }
   } catch { /* server unreachable - fall back to localStorage */ }
+  return null
+}
+
+/**
+ * Fetch docs from the server trying `id` first, then `devisNumber` as fallback.
+ * This handles the case where the client uploaded documents from the mobile espace-client
+ * (which uses `/espace-client/DEV-...` so the key is `paradise_docs_${devisNumber}`)
+ * while the dashboard opens the record by internal `id` (timestamp).
+ */
+async function fetchDocsFromServerByAnyId({ id, devisNumber }) {
+  if (id) {
+    const localById = getDocs(id)
+    if (Object.keys(localById).length > 0) return localById
+    const data = await fetchDocsFromServer(id)
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) return data
+  }
+  if (devisNumber && devisNumber !== id) {
+    const localByNum = getDocs(devisNumber)
+    if (Object.keys(localByNum).length > 0) {
+      // Mirror to the id key so future lookups are faster
+      if (id) { try { localStorage.setItem(getDocsKey(id), JSON.stringify(localByNum)) } catch { /* ignore */ } }
+      return localByNum
+    }
+    const data = await fetchDocsFromServer(devisNumber)
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      if (id) { try { localStorage.setItem(getDocsKey(id), JSON.stringify(data)) } catch { /* ignore */ } }
+      return data
+    }
+  }
   return null
 }
 
@@ -130,6 +159,7 @@ export default function ClientsTab() {
   const [editData, setEditData] = useState(null)
   const [fetchedDocs, setFetchedDocs] = useState({})
   const [fetchingDocKey, setFetchingDocKey] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
   const selectedRef = useRef(null)
   const isMobile = useIsMobile()
 
@@ -154,18 +184,11 @@ export default function ClientsTab() {
     return () => { clearInterval(id); window.removeEventListener('focus', reload) }
   }, [])
 
-  async function handleViewDoc(devisId, docKey) {
+  async function handleViewDoc(docKey) {
     setFetchingDocKey(docKey)
+    const current = selectedRef.current
     try {
-      // Check localStorage first for cached data
-      const local = getDocs(devisId)
-      if (local[docKey]) {
-        setFetchedDocs((prev) => ({ ...prev, [docKey]: local[docKey] }))
-        openDoc(local[docKey])
-        return
-      }
-      // Fetch from server
-      const serverDocs = await fetchDocsFromServer(devisId)
+      const serverDocs = await fetchDocsFromServerByAnyId({ id: current?.id, devisNumber: current?.devisNumber })
       if (serverDocs && serverDocs[docKey]) {
         setFetchedDocs((prev) => ({ ...prev, ...serverDocs }))
         openDoc(serverDocs[docKey])
@@ -174,6 +197,23 @@ export default function ClientsTab() {
       }
     } finally {
       setFetchingDocKey(null)
+    }
+  }
+
+  async function handleManualRefresh() {
+    setRefreshing(true)
+    try {
+      await refreshFromServer()
+      const fresh = getClients()
+      setClients(fresh)
+      if (selectedRef.current) {
+        const refreshed = fresh.find((c) => c.id === selectedRef.current.id)
+        if (refreshed) setSelected(refreshed)
+      }
+    } catch {
+      alert('Impossible de contacter le serveur. Veuillez réessayer.')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -329,13 +369,23 @@ export default function ClientsTab() {
     <div>
       <div className="flex-between mb-3">
         <h3 style={{ color: '#1a1a2e' }}>Clients & Devis ({clients.length})</h3>
-        <input
-          className="form-control"
-          placeholder="🔍 Rechercher..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: isMobile ? '100%' : '240px' }}
-        />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-sm btn-outline"
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {refreshing ? '⏳ Actualisation…' : '🔄 Rafraîchir maintenant'}
+          </button>
+          <input
+            className="form-control"
+            placeholder="🔍 Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: isMobile ? '100%' : '240px' }}
+          />
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: selected && !isMobile ? '1fr 420px' : '1fr', gap: '20px' }}>
@@ -608,7 +658,7 @@ export default function ClientsTab() {
                                 } else if (legacyDocs[key]) {
                                   openDoc(legacyDocs[key])
                                 } else {
-                                  handleViewDoc(selected.id || selected.devisNumber, key)
+                                  handleViewDoc(key)
                                 }
                               }}
                             >

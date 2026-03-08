@@ -32,6 +32,29 @@ async function fetchDocsFromServer(devisId) {
   return null
 }
 
+async function compressImageDataUrl(dataUrl, maxWidthPx = 1200, quality = 0.75) {
+  if (!dataUrl || !dataUrl.startsWith('data:image/')) return dataUrl // PDF ou autre : pas de compression
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      let w = img.width
+      let h = img.height
+      if (w > maxWidthPx) {
+        h = Math.round((h * maxWidthPx) / w)
+        w = maxWidthPx
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = () => resolve(dataUrl) // fallback : image originale
+    img.src = dataUrl
+  })
+}
+
 async function saveDocs(devisId, docs) {
   const key = getDocsKey(devisId)
   localStorage.setItem(key, JSON.stringify(docs))
@@ -43,13 +66,14 @@ async function saveDocs(devisId, docs) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(docs),
       })
-      if (res.ok) return // success
+      if (res.ok) return true
       console.warn(`[EspaceClient] Doc sync attempt ${attempt + 1} failed: ${res.status}`)
     } catch (err) {
       console.warn(`[EspaceClient] Doc sync attempt ${attempt + 1} error:`, err)
     }
     if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
   }
+  return false
 }
 
 function Voyant({ ok }) {
@@ -180,10 +204,18 @@ export default function EspaceClient() {
     sigRef.current?.clear()
   }
 
-  function handleDocChange(docKey, dataUrl) {
-    const updated = { ...docs, [docKey]: dataUrl }
+  async function handleDocChange(docKey, dataUrl) {
+    // Compresser l'image si c'est une image (les PDFs sont ignorés)
+    const compressed = await compressImageDataUrl(dataUrl)
+
+    const updated = { ...docs, [docKey]: compressed }
     setDocs(updated)
-    saveDocs(devisId, updated)
+
+    const ok = await saveDocs(devisId, updated)
+    if (!ok) {
+      alert("⚠️ Le document n'a pas pu être envoyé au serveur. Il est sauvegardé localement mais ne sera peut-être pas visible depuis le dashboard.\n\nEssayez un fichier plus léger ou une image de résolution moins élevée (idéalement moins de 2 Mo).")
+    }
+
     // Store only lightweight markers in client record (NOT the actual base64 data)
     // This prevents paradise_clients.json from becoming too large for PHP POST limits
     const docMarkers = {}
